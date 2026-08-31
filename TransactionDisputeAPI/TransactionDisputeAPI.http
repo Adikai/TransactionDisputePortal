@@ -1,0 +1,6 @@
+@TransactionDisputeAPI_HostAddress = http://localhost:5161
+
+GET {{TransactionDisputeAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

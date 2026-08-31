@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="../TransactionDisputeAPI/TransactionDisputePortal.API.csproj" />
+  <Project Path="../TransactionDisputePortal.Core/TransactionDisputePortal.Core.csproj" />
+  <Project Path="../TransactionDisputePortal.Services/TransactionDisputePortal.Infrastructure.csproj" />
+  <Project Path="../TransactionDisputePortal.Shared/TransactionDisputePortal.Shared.csproj" />
+  <Project Path="TransactionDisputePortal.Client.csproj" />
+</Solution>
