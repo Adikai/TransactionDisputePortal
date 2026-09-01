@@ -4,6 +4,8 @@ SET ANSI_PADDING ON;
 SET CONCAT_NULL_YIELDS_NULL ON;
 SET ARITHABORT ON;
 GO
+USE [TransactionDispute];
+GO
 --==============================================================================
 --Author:  Adhil Sewrathan
 --DateCreated: 2026-08-31
