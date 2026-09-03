@@ -1,6 +1,7 @@
 using Scalar.AspNetCore;
 using Serilog;
 using TransactionDisputePortal.Core.Interfaces;
+using TransactionDisputePortal.Infrastructure.Repositories;
 using TransactionDisputePortal.Services;
 
 Log.Logger = new LoggerConfiguration()
@@ -20,8 +21,19 @@ try
     builder.Services.AddScoped<ISqlExecuter>(sp =>
     new SqlExecuter(builder.Configuration.GetConnectionString("DefaultConnection")!));
     builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+    builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+    builder.Services.AddScoped<IAuditRepository, AuditRepository>();
 
     builder.Services.AddControllers();
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowBlazorClient", policy =>
+        {
+            policy.AllowAnyOrigin()  
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+    });
     builder.Services.AddOpenApi();
 
     var app = builder.Build();
@@ -32,7 +44,8 @@ try
         //I prefer ScalarApiReference over SwaggerUI, just looks better :D
         app.MapScalarApiReference();
     }
-
+    app.UseRouting();
+    app.UseCors("AllowBlazorClient");
     app.UseHttpsRedirection();
 
     app.UseAuthorization();

@@ -31,4 +31,35 @@ public class TransactionRepository : ITransactionRepository
             cancellationToken: cancellationToken
         );
     }
+
+    public async Task<bool> UpdateDisputeStatus(int disputeID, int newStatusID)
+    {
+        int rowsAffected = await _sqlExecuter.ExecuteAsync(
+            "[dbo].[UpdateDisputeStatus]",
+            new { DisputeID = disputeID, NewStatusID = newStatusID },
+            commandType: CommandType.StoredProcedure
+        );
+
+        return rowsAffected > 0;
+    }
+
+    public async Task<int> CreateDispute(CreateDisputeRequestDTO request)
+    {
+        var parameters = new
+        {
+            TransactionID = request.TransactionID,
+            CustomerID = request.CustomerID,
+            DisputeStatusID = request.DisputeStatusID,
+            ReasonCategory = request.ReasonCategory,
+            CustomerNotes = request.CustomerNotes,
+            DisputedAmount = request.DisputedAmount
+        };
+
+        int newDisputeID = await _sqlExecuter.QueryFirstOrDefaultAsync<int>(
+            "[dbo].[CreateDispute]",
+            parameters,
+            commandType: CommandType.StoredProcedure
+        );
+        return newDisputeID;
+    }
 }

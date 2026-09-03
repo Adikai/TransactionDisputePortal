@@ -1,7 +1,40 @@
 ﻿@page "/"
+@inject NavigationManager Navigation
+@inject AuthService AuthService
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+@if (isLoading)
+{
+    <p>Checking authentication...</p>
+}
+else
+{
+    <h1>Hello, world!</h1>
+    <p>Welcome to your new app.</p>
+    <button class="btn btn-primary" @onclick="Logout">Logout</button>
+}
 
-Welcome to your new app.
+@code {
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await AuthService.GetTokenAsync();
+
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/login", replace: true);
+        }
+        else
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.RemoveTokenAsync();
+        Navigation.NavigateTo("/login", replace: true);
+    }
+}

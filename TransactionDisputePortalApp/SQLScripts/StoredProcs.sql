@@ -19,7 +19,7 @@ CREATE OR ALTER PROCEDURE dbo.GetTransactionsByAccountAndDateRange
 AS
 BEGIN
     SET NOCOUNT ON;
-
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
     SELECT  
         T.TransactionID,
         T.AccountID,
@@ -77,6 +77,7 @@ VALUES
         NULL
     );
 
+    SELECT SCOPE_IDENTITY() AS NewDisputeID;
 END;
 
 GO
@@ -133,6 +134,8 @@ BEGIN
     WHERE DisputeID = @DisputeID
     AND DisputeStatusID <> @NewStatusID;
 
+    SELECT @@ROWCOUNT AS RowsAffected;
+
 END
 GO
 --==============================================================================
@@ -146,10 +149,37 @@ CREATE OR ALTER PROCEDURE dbo.UpdateAccountBalance
 AS
 BEGIN
     SET NOCOUNT ON;
+    DECLARE @UpdatedBalance DECIMAL(18, 2);
 
     UPDATE dbo.Accounts
-    SET Balance = @NewBalance
+    SET @UpdatedBalance = Balance = @NewBalance
     WHERE AccountID = @AccountID;
+
+    Select @UpdatedBalance AS UpdatedBalance;
+
+END
+GO
+
+--==============================================================================
+--Author:  Adhil Sewrathan
+--DateCreated: 2026-09-02
+--Description:  Gets account details per customer ID
+--==============================================================================
+CREATE OR ALTER PROCEDURE dbo.GetAccountDetailsByCustomerID
+@CustomerID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+SELECT 
+       AccountID
+      ,AccountNumber
+      ,CustomerID
+      ,AccountType
+      ,Balance
+      ,CreatedAt
+    FROM dbo.Accounts A WITH(NOLOCK)
+    WHERE A.CustomerID = @CustomerID;
 
 END
 GO
