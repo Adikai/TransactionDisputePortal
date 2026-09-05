@@ -5,8 +5,8 @@ using System.Text;
 namespace TransactionDisputePortal.Shared.Models.DTO
 {
     public record TransactionResponseDto(
-        long TransactionId,
-        int AccountId,
+        long TransactionID,
+        int AccountID,
         string MerchantName,
         decimal Amount,
         string TransactionType,

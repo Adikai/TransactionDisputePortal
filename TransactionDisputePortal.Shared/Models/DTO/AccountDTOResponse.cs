@@ -4,13 +4,12 @@ using System.Text;
 
 namespace TransactionDisputePortal.Shared.Models.DTO
 {
-    public class AccountDTOResponse
-    {
-      public int AccountID { get; set; }
-      public string AccountNumber { get; set; }
-      public int CustomerID { get; set; }
-      public string AccountType { get; set; }
-      public decimal Balance { get; set; }
-      public DateTimeOffset CreatedAt { get; set; }
-    }
+    public record AccountDTOResponse(
+            int AccountID,
+            string AccountNumber,
+            int CustomerID,
+            string AccountType,
+            decimal Balance,
+            DateTimeOffset CreatedAt
+        );
 }

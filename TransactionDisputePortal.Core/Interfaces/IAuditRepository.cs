@@ -7,8 +7,6 @@ namespace TransactionDisputePortal.Core.Interfaces
 {
     public interface IAuditRepository
     {
-        Task GetTransactionsByAccountAndDateRangeAsync(
-           InsertAuditLogRequestDto auditlog,
-           CancellationToken cancellationToken = default);
+        Task InsertAuditLog(InsertAuditLogRequestDto auditlog);
     }
 }

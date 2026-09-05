@@ -16,11 +16,11 @@ namespace TransactionDisputePortal.Infrastructure.Repositories
             _sqlExecuter = sqlExecuter ?? throw new ArgumentNullException(nameof(sqlExecuter));
         }
 
-        public async Task<decimal> UpdateAccountBalance(int accountID, decimal amount)
+        public async Task<decimal> UpdateAccountBalance(UpdateBalanceRequestDTO request)
         {
             decimal UpdatedBalance = await _sqlExecuter.QueryFirstOrDefaultAsync<decimal>(
                 "[dbo].[UpdateAccountBalance]",
-                new { AccountID = accountID, NewBalance = amount },
+                new { AccountID = request.AccountID, NewBalance = request.Amount },
                 commandType: System.Data.CommandType.StoredProcedure
             );
 

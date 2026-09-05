@@ -16,9 +16,8 @@ namespace TransactionDisputePortal.Infrastructure.Repositories
             _sqlExecuter = sqlExecuter ?? throw new ArgumentNullException(nameof(sqlExecuter));
         }
 
-        public async Task GetTransactionsByAccountAndDateRangeAsync(
-            InsertAuditLogRequestDto auditlog,
-            CancellationToken cancellationToken = default)
+        public async Task InsertAuditLog(
+            InsertAuditLogRequestDto auditlog)
         {
             var parameters = new
             {
@@ -33,14 +32,8 @@ namespace TransactionDisputePortal.Infrastructure.Repositories
             await _sqlExecuter.ExecuteAsync(
                 "[dbo].[InsertAuditLog]",
                 parameters,
-                commandType: CommandType.StoredProcedure,
-                cancellationToken: cancellationToken
+                commandType: CommandType.StoredProcedure
             );
-            
         }
     }
-
-  
-
-        
-    }
+}
