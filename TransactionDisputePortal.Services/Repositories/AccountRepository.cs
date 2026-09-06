@@ -7,7 +7,7 @@ using TransactionDisputePortal.Shared.Models.DTO;
 
 namespace TransactionDisputePortal.Infrastructure.Repositories
 {
-    public class AccountRepository: IAccountRepository
+    public class AccountRepository : IAccountRepository
     {
 
         private readonly ISqlExecuter _sqlExecuter;
@@ -67,6 +67,16 @@ namespace TransactionDisputePortal.Infrastructure.Repositories
                 (string)row.Email,
                 null
             );
-            }
+        }
+        public async Task<List<AccountSummaryDto>> GetAccountNumbersByCustomerID(int customerID)
+        {
+            var accountNumbers = await _sqlExecuter.QueryAsync<AccountSummaryDto>(
+                "dbo.GetAccountsByCustomerID",
+                new { CustomerID = customerID },
+                commandType: CommandType.StoredProcedure
+            );
+
+            return accountNumbers.ToList();
+        }
     }
 }

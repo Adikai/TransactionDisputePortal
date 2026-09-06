@@ -4,9 +4,10 @@ using System.Text;
 
 namespace TransactionDisputePortal.Shared.Models.DTO
 {
-    public record GetTransactionsRequestDto(
-        string AccountNumber,
-        DateTimeOffset StartDate,
-        DateTimeOffset EndDate
-    );
+    public class GetTransactionsRequestDto
+    {
+        public string? AccountNumber { get; set; }
+        public DateTimeOffset StartDate { get; set; }
+        public DateTimeOffset EndDate { get; set; }
+    }
 }

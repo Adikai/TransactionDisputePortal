@@ -7,11 +7,13 @@ namespace TransactionDisputePortal.Shared.Models.DTO
     public record TransactionResponseDto(
         long TransactionID,
         int AccountID,
-        string MerchantName,
-        decimal Amount,
-        string TransactionType,
+        string AccountNumber,
+        DateTimeOffset TransactionDate,
         string ReferenceNumber,
+        string MerchantName,
+        string TransactionType,
+        decimal Amount,
         string StatusName,
-        DateTimeOffset TransactionDate
+        bool HasActiveDispute
     );
 }

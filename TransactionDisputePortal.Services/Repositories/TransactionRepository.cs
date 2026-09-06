@@ -62,4 +62,49 @@ public class TransactionRepository : ITransactionRepository
         );
         return newDisputeID;
     }
+
+    public async Task<TransactionResponseDto?> GetTransactionByID(
+    long transactionID,
+    CancellationToken cancellationToken = default)
+    {
+        var parameters = new
+        {
+            TransactionID = transactionID
+        };
+
+        return await _sqlExecuter.QueryFirstOrDefaultAsync<TransactionResponseDto>(
+            "[dbo].[GetTransactionByID]",
+            parameters,
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken
+        );
+    }
+
+    public async Task<IEnumerable<GetAllDisputesByCustomerIDResponseDTO>> GetAllDisputesByCustomerID(int customerID, CancellationToken cancellationToken = default)
+    {
+        var parameters = new
+        {
+            CustomerID = customerID
+        };
+        return await _sqlExecuter.QueryAsync<GetAllDisputesByCustomerIDResponseDTO>(
+            "[dbo].[GetAllDisputesByCustomerID]",
+            parameters,
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken
+        );
+    }
+
+    public async Task<IEnumerable<GetAllDisputesByCustomerIDResponseDTO>> GetDisputeByID(int disputeID, CancellationToken cancellationToken = default)
+    {
+        var parameters = new
+        {
+            DisputeID = disputeID
+        };
+        return await _sqlExecuter.QueryAsync<GetAllDisputesByCustomerIDResponseDTO>(
+            "[dbo].[GetDisputeByID]",
+            parameters,
+            commandType: CommandType.StoredProcedure,
+            cancellationToken: cancellationToken
+        );
+    }
 }

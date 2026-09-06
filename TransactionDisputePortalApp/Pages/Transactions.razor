@@ -1,5 +1,231 @@
-﻿<h3>Transactions</h3>
+﻿@page "/transactions"
+@using System.Globalization
+@inject NavigationManager Navigation
+@inject AuthService AuthService
 
-@code {
+<PageTitle>Transactions - Transaction Dispute Portal</PageTitle>
 
+<div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Account Transactions</h3>
+            <p class="text-muted small mb-0">Search historical transactions and initiate disputes for unauthorized or incorrect charges.</p>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card border-0 shadow-sm p-4 mb-4">
+        <form @onsubmit="FetchTransactionsAsync" @onsubmit:preventDefault>
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-4">
+                    <label class="form-label fw-semibold text-muted small mb-1">Account Number</label>
+                    <input type="text" @bind="filterModel.AccountNumber" class="form-control" placeholder="e.g. ACC-987654321" />
+                </div>
+                <div class="col-12 col-sm-6 col-md-3">
+                    <label class="form-label fw-semibold text-muted small mb-1">Start Date</label>
+                    <input type="date" @bind="filterModel.StartDate" class="form-control" />
+                </div>
+                <div class="col-12 col-sm-6 col-md-3">
+                    <label class="form-label fw-semibold text-muted small mb-1">End Date</label>
+                    <input type="date" @bind="filterModel.EndDate" class="form-control" />
+                </div>
+                <div class="col-12 col-md-2">
+                    <button type="submit" class="btn btn-primary w-100 fw-semibold d-flex align-items-center justify-content-center gap-2" disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <span>Loading...</span>
+                        }
+                        else
+                        {
+                            <span>Search</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-12 col-md-4">
+        <label class="form-label fw-semibold text-muted small mb-1">Account Number</label>
+        <select @bind="filterModel.AccountNumber" class="form-select">
+            @if (customerAccounts == null)
+            {
+                <option value="">Loading accounts...</option>
+            }
+            else
+            {
+                @foreach (var acc in customerAccounts)
+                {
+                    <option value="@acc.AccountNumber">@acc.AccountNumber (@acc.AccountType)</option>
+                }
+            }
+        </select>
+    </div>
+
+    <!-- Feedback Alerts -->
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+            <strong>Error:</strong> @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+            <strong>Success:</strong> @successMessage
+            <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+        </div>
+    }
+
+    <!-- Transactions Data Table -->
+    <div class="card border-0 shadow-sm p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Transaction Records</h5>
+            @if (transactions != null)
+            {
+                <span class="badge bg-light text-dark border">
+                    Total: <strong>@transactions.Count</strong> records
+                </span>
+            }
+        </div>
+
+        @if (isLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading transactions...</span>
+                </div>
+                <p class="text-muted mt-2 mb-0 small">Fetching transactions for selected period...</p>
+            </div>
+        }
+        else if (transactions == null)
+        {
+            <div class="text-center py-5 text-muted">
+                <p class="mb-0">Enter an account number and click <strong>Search</strong> to load transaction history.</p>
+            </div>
+        }
+        else if (!transactions.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <p class="mb-0">No transactions found for the specified account and date range.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr class="small text-uppercase text-muted">
+                            <th>Date</th>
+                            <th>Reference</th>
+                            <th>Merchant</th>
+                            <th>Type</th>
+                            <th class="text-end">Amount</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var txn in transactions)
+                        {
+                            <tr>
+                                <td class="text-nowrap text-muted small">
+                                    @txn.TransactionDate.ToString("yyyy-MM-dd HH:mm")
+                                </td>
+                                <td class="fw-semibold">@txn.ReferenceNumber</td>
+                                <td>@txn.MerchantName</td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary border px-2 py-1">
+                                        @txn.TransactionType
+                                    </span>
+                                </td>
+                                <td class="text-end fw-bold">
+                                    @txn.Amount.ToString("C", CultureInfo.GetCultureInfo("en-ZA"))
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge @GetTransactionStatusBadge(txn.StatusName) px-2 py-1">
+                                        @txn.StatusName
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <button class="btn btn-outline-danger btn-sm fw-semibold"
+                                            @onclick="() => OpenDisputeModal(txn)"
+                                            disabled="@(txn.HasActiveDispute)">
+                                        @(txn.HasActiveDispute ? "Disputed" : "Lodge Dispute")
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Dispute Modal Backdrop -->
+@if (showDisputeModal && selectedTransaction != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold">Lodge Transaction Dispute</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseDisputeModal"></button>
+                </div>
+                <form @onsubmit="SubmitDisputeAsync" @onsubmit:preventDefault>
+                    <div class="modal-body p-4">
+                        <div class="bg-light p-3 rounded mb-3 border">
+                            <div class="row g-2 small">
+                                <div class="col-6"><strong>Reference:</strong> @selectedTransaction.ReferenceNumber</div>
+                                <div class="col-6"><strong>Merchant:</strong> @selectedTransaction.MerchantName</div>
+                                <div class="col-6"><strong>Date:</strong> @selectedTransaction.TransactionDate.ToString("yyyy-MM-dd")</div>
+                                <div class="col-6"><strong>Original Amount:</strong> @selectedTransaction.Amount.ToString("C", CultureInfo.GetCultureInfo("en-ZA"))</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted small">Reason Category</label>
+                            <select @bind="disputeModel.ReasonCategory" class="form-select">
+                                <option value="">-- Select Reason --</option>
+                                <option value="Fraudulent Charge">Fraudulent Charge / Unauthorized</option>
+                                <option value="Incorrect Amount">Incorrect Amount Billed</option>
+                                <option value="Duplicate Charge">Duplicate Transaction</option>
+                                <option value="Goods Not Received">Goods / Services Not Received</option>
+                                <option value="Paid via Other Means">Paid by Other Means</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted small">Disputed Amount (ZAR)</label>
+                            <input type="number" step="0.01" @bind="disputeModel.DisputedAmount" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted small">Customer Notes / Reason Details</label>
+                            <textarea @bind="disputeModel.CustomerNotes" class="form-control" rows="3" placeholder="Provide detailed context regarding why you are disputing this transaction..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseDisputeModal">Cancel</button>
+                        <button type="submit" class="btn btn-danger fw-semibold px-4" disabled="@isSubmittingDispute">
+                            @if (isSubmittingDispute)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                <span>Submitting...</span>
+                            }
+                            else
+                            {
+                                <span>Submit Dispute</span>
+                            }
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 }

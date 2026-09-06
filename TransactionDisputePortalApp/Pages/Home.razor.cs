@@ -5,7 +5,7 @@ using TransactionDisputePortal.Shared.Models.DTO;
 
 namespace TransactionDisputePortal.Client.Pages
 {
-    public partial class Home: ComponentBase
+    public partial class Home : ComponentBase
     {
         [Inject] public NavigationManager Navigation { get; set; } = default!;
         [Inject] public AuthService AuthService { get; set; } = default!;
@@ -80,6 +80,18 @@ namespace TransactionDisputePortal.Client.Pages
         private void SelectAccount(int accountId)
         {
             selectedAccountId = accountId;
+        }
+
+        private void NavigateToTransactions()
+        {
+            if (SelectedAccount != null && !string.IsNullOrWhiteSpace(SelectedAccount.AccountNumber))
+            {
+                Navigation.NavigateTo($"/transactions?accountNumber={Uri.EscapeDataString(SelectedAccount.AccountNumber)}");
+            }
+            else
+            {
+                Navigation.NavigateTo("/transactions");
+            }
         }
 
         private async Task HandleLogoutAsync()

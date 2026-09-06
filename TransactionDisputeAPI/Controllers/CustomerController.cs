@@ -18,7 +18,9 @@ namespace TransactionDisputePortal.API.Controllers
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _accountRepository = accountRepository ?? throw new ArgumentNullException(nameof(accountRepository));
         }
-
+        /// <summary>
+        /// Logs in a Customer
+        /// </summary>
         [HttpPost("login")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -41,7 +43,9 @@ namespace TransactionDisputePortal.API.Controllers
 
             return Ok(response);
         }
-
+        /// <summary>
+        /// Updates a customer's balance
+        /// </summary>
         [HttpPost("UpdateBalance")]
         [ProducesResponseType(typeof(decimal), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -64,7 +68,9 @@ namespace TransactionDisputePortal.API.Controllers
                 throw;
             }
         }
-
+        /// <summary>
+        /// Gets the dashboard data per customer
+        /// </summary>
         [HttpGet("GetCustomerDashboard/{customerID}")]
         [ProducesResponseType(typeof(CustomerDashboardResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -78,6 +84,27 @@ namespace TransactionDisputePortal.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while fetching customer dashboard data.");
+                return BadRequest(ex.Message);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Gets accounts per customerID
+        /// </summary>
+        [HttpGet("Accounts/{customerID}")]
+        [ProducesResponseType(typeof(List<AccountSummaryDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Accounts(int customerID)
+        {
+            try
+            {
+                var accounts = await _accountRepository.GetAccountNumbersByCustomerID(customerID);
+                return Ok(accounts);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while fetching customer accounts");
                 return BadRequest(ex.Message);
                 throw;
             }

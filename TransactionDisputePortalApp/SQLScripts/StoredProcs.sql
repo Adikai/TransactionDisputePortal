@@ -20,21 +20,25 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
-    SELECT  
-        T.TransactionID,
-        T.AccountID,
-        T.MerchantName,
-        T.Amount,
-        T.TransactionType,
-        T.ReferenceNumber,
-        S.StatusName,
-        T.TransactionDate
-    FROM dbo.Transactions T
-    INNER JOIN dbo.Accounts A ON T.AccountID = A.AccountID
-    INNER JOIN dbo.TransactionStatuses S ON T.StatusID = S.StatusID
-    WHERE A.AccountNumber = @AccountNumber
-      AND T.TransactionDate >= @StartDate 
-      AND T.TransactionDate < @EndDate;
+    SELECT 
+        t.TransactionID,
+        t.AccountID,
+        a.AccountNumber,
+        t.TransactionDate,
+        t.ReferenceNumber,
+        t.MerchantName,
+        t.TransactionType,
+        t.Amount,
+        ts.StatusName,
+        CAST(CASE WHEN d.DisputeID IS NOT NULL THEN 1 ELSE 0 END AS BIT) AS HasActiveDispute
+    FROM dbo.Transactions t
+    INNER JOIN dbo.Accounts a ON t.AccountID = a.AccountID
+    INNER JOIN dbo.TransactionStatuses ts ON t.StatusID = ts.StatusID
+    LEFT JOIN dbo.Disputes d ON t.TransactionID = d.TransactionID AND d.DisputeStatusID NOT IN (4, 5) -- Exclude Approved/Rejected
+    WHERE a.AccountNumber = @AccountNumber
+      AND t.TransactionDate >= @StartDate
+      AND t.TransactionDate <= @EndDate
+    ORDER BY t.TransactionDate DESC;
 END;
 GO
 --==============================================================================
@@ -44,7 +48,7 @@ GO
 --==============================================================================
 CREATE OR ALTER PROCEDURE dbo.CreateDispute 
 @TransactionID BIGINT,
-@customerID INT,
+@CustomerID INT,
 @DisputeStatusID INT,
 @ReasonCategory NVARCHAR(100),
 @CustomerNotes NVARCHAR(1000),
@@ -294,4 +298,105 @@ FROM dbo.Customers  WITH(NOLOCK)
 WHERE Email = @Email AND PasswordHash = @PasswordHash;
 
 END
+GO
+--==============================================================================
+--Author:  Adhil Sewrathan
+--DateCreated: 2026-09-06
+--Description:  Gets a single transaction by its ID, including account details and dispute status
+--==============================================================================
+CREATE OR ALTER PROCEDURE [dbo].[GetTransactionByID]
+    @TransactionID BIGINT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT 
+        t.TransactionID,
+        t.AccountID,
+        a.AccountNumber,
+        t.TransactionDate,
+        t.ReferenceNumber,
+        t.MerchantName,
+        t.TransactionType,
+        t.Amount,
+        ts.StatusName,
+        CAST(CASE WHEN d.DisputeID IS NOT NULL THEN 1 ELSE 0 END AS BIT) AS HasActiveDispute
+    FROM dbo.Transactions t
+    INNER JOIN dbo.Accounts a ON t.AccountID = a.AccountID
+    INNER JOIN dbo.TransactionStatuses ts ON t.StatusID = ts.StatusID
+    LEFT JOIN dbo.Disputes d ON t.TransactionID = d.TransactionID
+    WHERE t.TransactionID = @TransactionID;
+END;
+GO
+--==============================================================================
+--Author:  Adhil Sewrathan
+--DateCreated: 2026-09-06
+--Description:  Gets all disputes for a given customer ID, including transaction and dispute status details
+--==============================================================================
+CREATE OR ALTER PROCEDURE [dbo].[GetAllDisputesByCustomerID]
+    @CustomerID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT 
+        d.DisputeID,
+        d.TransactionID,
+        t.ReferenceNumber,
+        t.MerchantName,
+        d.DisputedAmount,
+        d.ReasonCategory,
+        ds.StatusName AS DisputeStatus,
+        d.CreatedAt AS CreatedDateCreatedAt,
+        d.UpdatedAt AS LastUpdatedDate
+    FROM dbo.Disputes d
+    INNER JOIN dbo.Transactions t ON d.TransactionID = t.TransactionID
+    INNER JOIN dbo.DisputeStatuses ds ON d.DisputeStatusID = ds.disputeStatusID
+    WHERE d.CustomerID = @CustomerID
+    ORDER BY d.CreatedAt DESC;
+END;
+GO
+--==============================================================================
+--Author:  Adhil Sewrathan
+--DateCreated: 2026-09-06
+--Description:  Gets a single dispute by its ID, including transaction and dispute status details
+--==============================================================================
+CREATE OR ALTER PROCEDURE [dbo].[GetDisputeByID]
+    @DisputeID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT 
+        d.DisputeID,
+        d.TransactionID,
+        t.ReferenceNumber,
+        t.MerchantName,
+        d.DisputedAmount,
+        d.ReasonCategory,
+        ds.StatusName AS DisputeStatus,
+        d.CreatedAt AS CreatedDateCreatedAt,
+        d.UpdatedAt AS LastUpdatedDate
+    FROM dbo.Disputes d
+    INNER JOIN dbo.Transactions t ON d.TransactionID = t.TransactionID
+    INNER JOIN dbo.DisputeStatuses ds ON d.DisputeStatusID = ds.disputeStatusID
+    WHERE d.DisputeID = @DisputeID
+    ORDER BY d.CreatedAt DESC;
+END;
+GO
+--==============================================================================
+--Author:  Adhil Sewrathan
+--DateCreated: 2026-09-06
+--Description:  Gets all accounts for a customer
+--==============================================================================
+CREATE OR ALTER PROCEDURE [dbo].[GetAccountsByCustomerID]
+    @CustomerID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT a.AccountNumber
+    FROM dbo.Accounts AS a
+    WHERE a.CustomerID = @CustomerID;
+END;
 GO
