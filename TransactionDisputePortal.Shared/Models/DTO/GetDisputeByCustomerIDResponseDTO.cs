@@ -4,7 +4,7 @@ using System.Text;
 
 namespace TransactionDisputePortal.Shared.Models.DTO
 {
-    public class GetAllDisputesByCustomerIDResponseDTO
+    public class GetDisputeByCustomerIDResponseDTO
     {
         public int DisputeID { get; set; }
         public long TransactionID { get; set; }

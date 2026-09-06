@@ -169,8 +169,8 @@ public class TransactionsController : ControllerBase
     /// Retrieves all disputes lodged by a specific customer.
     /// </summary>
     [HttpGet("disputes/customer/{customerId:int}")]
-    [ProducesResponseType(typeof(IEnumerable<GetAllDisputesByCustomerIDResponseDTO>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<GetAllDisputesByCustomerIDResponseDTO>>> GetDisputesByCustomer(int customerId, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(IEnumerable<DisputeResponseDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<DisputeResponseDto>>> GetDisputesByCustomer(int customerId, CancellationToken cancellationToken)
     {
         try
         {
@@ -188,9 +188,9 @@ public class TransactionsController : ControllerBase
     /// Retrieves a single dispute details by Dispute ID.
     /// </summary>
     [HttpGet("disputes/{disputeId:int}")]
-    [ProducesResponseType(typeof(GetAllDisputesByCustomerIDResponseDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(GetDisputeByCustomerIDResponseDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<GetAllDisputesByCustomerIDResponseDTO>> GetDisputeById(int disputeId, CancellationToken cancellationToken)
+    public async Task<ActionResult<GetDisputeByCustomerIDResponseDTO>> GetDisputeById(int disputeId, CancellationToken cancellationToken)
     {
         try
         {

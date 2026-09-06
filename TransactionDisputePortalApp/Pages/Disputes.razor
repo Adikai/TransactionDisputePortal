@@ -1,5 +1,183 @@
-﻿<h3>Disputes</h3>
+﻿@page "/disputes"
+@using System.Globalization
+@using TransactionDisputePortal.Client.Components
+@inject HttpClient Http
+@inject AuthService AuthService
 
-@code {
+<PageTitle>Track Disputes - Transaction Dispute Portal</PageTitle>
 
+<div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Track Active Disputes</h3>
+            <p class="text-muted small mb-0">Monitor progress, view status updates, and review notes on submitted disputes.</p>
+        </div>
+    </div>
+
+    <!-- Summary KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small fw-semibold">Total Disputes</div>
+                <div class="fs-4 fw-bold text-dark mt-1">@(disputes?.Count ?? 0)</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small fw-semibold">Active / In Progress</div>
+                <div class="fs-4 fw-bold text-warning mt-1">@ActiveCount</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small fw-semibold">Resolved / Approved</div>
+                <div class="fs-4 fw-bold text-success mt-1">@ResolvedCount</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="text-muted small fw-semibold">Total Disputed Value</div>
+                <div class="fs-4 fw-bold text-primary mt-1">
+                    @TotalDisputedValue.ToString("C", CultureInfo.GetCultureInfo("en-ZA"))
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Controls -->
+    <div class="card border-0 shadow-sm p-3 mb-4">
+        <div class="row g-3">
+            <div class="col-12 col-md-6 col-lg-8">
+                <input type="text" @bind="searchQuery" @bind:event="oninput" class="form-control" placeholder="Search by reference or merchant..." />
+            </div>
+            <div class="col-12 col-md-6 col-lg-4">
+                <select @bind="selectedStatusFilter" class="form-select">
+                    <option value="">All Statuses</option>
+                    <option value="Submitted">Submitted</option>
+                    <option value="Under Review">Under Review</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Alerts -->
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+            <strong>Error:</strong> @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+
+    <!-- Disputes Data Table -->
+    <div class="card border-0 shadow-sm p-4">
+        @if (isLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading disputes...</span>
+                </div>
+                <p class="text-muted mt-2 mb-0 small">Fetching your submitted disputes...</p>
+            </div>
+        }
+        else if (FilteredDisputes == null || !FilteredDisputes.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <p class="mb-0">No disputes found matching your filter criteria.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr class="small text-uppercase text-muted">
+                            <th>Dispute ID</th>
+                            <th>Reference</th>
+                            <th>Merchant</th>
+                            <th>Reason</th>
+                            <th>Date Submitted</th>
+                            <th class="text-end">Disputed Amount</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in FilteredDisputes)
+                        {
+                            <tr>
+                                <td class="fw-semibold">#@item.DisputeID</td>
+                                <td>@item.ReferenceNumber</td>
+                                <td>@item.MerchantName</td>
+                                <td>@item.ReasonCategory</td>
+                                <td class="text-muted small">@item.CreatedDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td class="text-end fw-bold">@item.DisputedAmount.ToString("C", CultureInfo.GetCultureInfo("en-ZA"))</td>
+                                <td class="text-center">
+                                    <StatusBadge Status="@item.DisputeStatus" />
+                                </td>
+                                <td class="text-end">
+                                    <button class="btn btn-outline-primary btn-sm fw-semibold" @onclick="() => ViewDisputeDetails(item)">
+                                        View Details
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Dispute Details / Timeline Modal -->
+@if (selectedDispute != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold">Dispute Details — #@selectedDispute.DisputeID</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseDetailsModal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-3">
+                            <label class="text-muted small fw-semibold">Reference</label>
+                            <div class="fw-bold">@selectedDispute.ReferenceNumber</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="text-muted small fw-semibold">Merchant</label>
+                            <div class="fw-bold">@selectedDispute.MerchantName</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="text-muted small fw-semibold">Disputed Amount</label>
+                            <div class="fw-bold text-primary">@selectedDispute.DisputedAmount.ToString("C", CultureInfo.GetCultureInfo("en-ZA"))</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="text-muted small fw-semibold">Current Status</label>
+                            <div><StatusBadge Status="@selectedDispute.DisputeStatus" /></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="text-muted small fw-semibold">Reason Category</label>
+                        <div>@selectedDispute.ReasonCategory</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="text-muted small fw-semibold">Customer Notes</label>
+                        <div class="bg-light p-3 rounded border text-muted small">
+                            @(string.IsNullOrWhiteSpace(selectedDispute.CustomerNotes) ? "No notes provided." : selectedDispute.CustomerNotes)
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDetailsModal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 }

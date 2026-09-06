@@ -80,27 +80,27 @@ public class TransactionRepository : ITransactionRepository
         );
     }
 
-    public async Task<IEnumerable<GetAllDisputesByCustomerIDResponseDTO>> GetAllDisputesByCustomerID(int customerID, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<DisputeResponseDto>> GetAllDisputesByCustomerID(int customerID, CancellationToken cancellationToken = default)
     {
         var parameters = new
         {
             CustomerID = customerID
         };
-        return await _sqlExecuter.QueryAsync<GetAllDisputesByCustomerIDResponseDTO>(
-            "[dbo].[GetAllDisputesByCustomerID]",
+        return await _sqlExecuter.QueryAsync<DisputeResponseDto>(
+            "[dbo].[GetDisputesByCustomerID]",
             parameters,
             commandType: CommandType.StoredProcedure,
             cancellationToken: cancellationToken
         );
     }
 
-    public async Task<IEnumerable<GetAllDisputesByCustomerIDResponseDTO>> GetDisputeByID(int disputeID, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<GetDisputeByCustomerIDResponseDTO>> GetDisputeByID(int disputeID, CancellationToken cancellationToken = default)
     {
         var parameters = new
         {
             DisputeID = disputeID
         };
-        return await _sqlExecuter.QueryAsync<GetAllDisputesByCustomerIDResponseDTO>(
+        return await _sqlExecuter.QueryAsync<GetDisputeByCustomerIDResponseDTO>(
             "[dbo].[GetDisputeByID]",
             parameters,
             commandType: CommandType.StoredProcedure,

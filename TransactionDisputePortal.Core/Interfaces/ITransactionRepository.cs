@@ -16,8 +16,8 @@ namespace TransactionDisputePortal.Core.Interfaces
         Task<bool> UpdateDisputeStatus(int disputeID, int newStatusID);
         Task<int> CreateDispute(CreateDisputeRequestDTO request);
         Task<TransactionResponseDto?> GetTransactionByID(long transactionID, CancellationToken cancellationToken = default);
-        Task<IEnumerable<GetAllDisputesByCustomerIDResponseDTO>> GetAllDisputesByCustomerID(int customerID, CancellationToken cancellationToken = default);
-        Task<IEnumerable<GetAllDisputesByCustomerIDResponseDTO>> GetDisputeByID(int disputeID, CancellationToken cancellationToken = default);
+        Task<IEnumerable<DisputeResponseDto>> GetAllDisputesByCustomerID(int customerID, CancellationToken cancellationToken = default);
+        Task<IEnumerable<GetDisputeByCustomerIDResponseDTO>> GetDisputeByID(int disputeID, CancellationToken cancellationToken = default);
     }
 
 
