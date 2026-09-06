@@ -31,7 +31,8 @@ namespace TransactionDisputePortal.Client.Pages
 
                     if (result != null)
                     {
-                        await AuthService.SetTokenAsync(result.Token, result.CustomerID);
+                        string customerName = result.FirstName + ' ' + result.LastName;
+                        await AuthService.SetTokenAsync(result.Token, result.CustomerID, customerName);
                         Navigation.NavigateTo("/", replace: true);
                         return;
                     }

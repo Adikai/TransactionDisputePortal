@@ -35,10 +35,10 @@ namespace TransactionDisputePortal.API.Controllers
 
             var response = new LoginResponseDto(
                 customer.CustomerID,
-                "dummy-token-xyz123", //Using dummy token for demonstration purposes. In a real application,I would generate a JWT token.
                 customer.FirstName,
                 customer.LastName,
-                customer.Email
+                customer.Email,
+                "dummy-token-xyz123" //Using dummy token for demonstration purposes. In a real application,I would generate a JWT token.
             );
 
             return Ok(response);
