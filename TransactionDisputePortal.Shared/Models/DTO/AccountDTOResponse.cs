@@ -10,6 +10,8 @@ namespace TransactionDisputePortal.Shared.Models.DTO
             int CustomerID,
             string AccountType,
             decimal Balance,
-            DateTimeOffset CreatedAt
+            DateTimeOffset CreatedAt,
+            int ActiveDisputeCount,
+            decimal TotalDisputedAmount
         );
 }

@@ -1,0 +1,42 @@
+
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.style-loader {
+    min-height: 300px;
+}
+
+.metric-card {
+    border-radius: 12px;
+    transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
+    }
+
+.metric-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.account-card {
+    border-radius: 12px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+    .account-card.active-account {
+        border: 2px solid #0d6efd !important;
+        background-color: #f8faff;
+    }
+
+.account-card-badge {
+    border-left: 4px solid #0d6efd;
+}

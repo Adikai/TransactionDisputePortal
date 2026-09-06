@@ -144,42 +144,154 @@ GO
 --Description:  Updates the Balance of an account 
 --==============================================================================
 CREATE OR ALTER PROCEDURE dbo.UpdateAccountBalance
-@AccountID INT,
-@NewBalance DECIMAL(18, 2)
+    @AccountID INT,
+    @NewBalance DECIMAL(18, 2),
+    @Reason NVARCHAR(250) = 'Dispute Adjustment'
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @UpdatedBalance DECIMAL(18, 2);
+    SET XACT_ABORT ON;
 
-    UPDATE dbo.Accounts
-    SET @UpdatedBalance = Balance = @NewBalance
+    BEGIN TRANSACTION;
+
+    DECLARE @PreviousBalance DECIMAL(18, 2);
+
+    SELECT @PreviousBalance = Balance 
+    FROM dbo.Accounts WITH (UPDLOCK, ROWLOCK)
     WHERE AccountID = @AccountID;
 
-    Select @UpdatedBalance AS UpdatedBalance;
+    IF @PreviousBalance IS NULL
+    BEGIN
+        ROLLBACK TRANSACTION;
+        RAISERROR('Account ID not found.', 16, 1);
+        RETURN;
+    END
 
-END
+    UPDATE dbo.Accounts
+    SET Balance = @NewBalance
+    WHERE AccountID = @AccountID;
+
+    INSERT INTO dbo.AccountBalanceAuditLogs (AccountID, PreviousBalance, NewBalance, Reason)
+    VALUES (@AccountID, @PreviousBalance, @NewBalance, @Reason);
+
+    COMMIT TRANSACTION;
+
+    SELECT @NewBalance AS UpdatedBalance;
+END;
 GO
 
 --==============================================================================
 --Author:  Adhil Sewrathan
---DateCreated: 2026-09-02
+--DateCreated: 2026-09-05
 --Description:  Gets account details per customer ID
 --==============================================================================
-CREATE OR ALTER PROCEDURE dbo.GetAccountDetailsByCustomerID
-@CustomerID INT
+CREATE OR ALTER PROCEDURE dbo.GetAccountsByCustomerID
+    @CustomerID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+    SELECT 
+        A.AccountID,
+        A.AccountNumber,
+        A.CustomerID,
+        A.AccountType,
+        A.Balance,
+        A.CreatedAt,
+        COUNT(D.DisputeID) AS ActiveDisputeCount,
+        ISNULL(SUM(D.DisputedAmount), 0.00) AS TotalDisputedAmount
+    FROM dbo.Accounts A WITH(NOLOCK)
+    LEFT JOIN dbo.Transactions T WITH(NOLOCK) 
+        ON A.AccountID = T.AccountID
+    LEFT JOIN dbo.Disputes D WITH(NOLOCK) 
+        ON T.TransactionID = D.TransactionID 
+        AND D.DisputeStatusID IN (1, 2) -- 1: Submitted, 2: Under Review
+    WHERE A.CustomerID = @CustomerID
+    GROUP BY 
+        A.AccountID, 
+        A.AccountNumber, 
+        A.CustomerID, 
+        A.AccountType, 
+        A.Balance, 
+        A.CreatedAt;
+END;
+GO
+--==============================================================================
+--Author:  Adhil Sewrathan
+--DateCreated: 2026-09-06
+--Description:  Gets customer dashboard metrics per customer ID
+--==============================================================================
+CREATE OR ALTER PROCEDURE dbo.GetCustomerDashboardMetrics
+    @CustomerID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+    SELECT 
+        ISNULL(SUM(A.Balance), 0.00) AS OverallBalance,
+        COUNT(DISTINCT A.AccountID) AS TotalAccountsCount,
+        COUNT(D.DisputeID) AS OverallActiveDisputeCount,
+        ISNULL(SUM(D.DisputedAmount), 0.00) AS OverallDisputedAmount
+    FROM dbo.Accounts A WITH(NOLOCK)
+    LEFT JOIN dbo.Transactions T WITH(NOLOCK) 
+        ON A.AccountID = T.AccountID
+    LEFT JOIN dbo.Disputes D WITH(NOLOCK) 
+        ON T.TransactionID = D.TransactionID 
+        AND D.DisputeStatusID IN (1, 2)
+    WHERE A.CustomerID = @CustomerID;
+END;
+GO
+--==============================================================================
+--Author:  Adhil Sewrathan
+--DateCreated: 2026-09-06
+--Description:  Gets recent disputes per customer ID
+--==============================================================================
+CREATE OR ALTER PROCEDURE dbo.GetRecentDisputesByCustomerID
+    @CustomerID INT,
+    @TopCount INT = 5
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+    SELECT TOP (@TopCount)
+        D.DisputeID,
+        T.ReferenceNumber,
+        D.ReasonCategory,
+        D.DisputedAmount,
+        DS.StatusName,
+        D.CreatedAt
+    FROM dbo.Disputes D WITH(NOLOCK)
+    INNER JOIN dbo.Transactions T WITH(NOLOCK) 
+        ON D.TransactionID = T.TransactionID
+    INNER JOIN dbo.Accounts A WITH(NOLOCK) 
+        ON T.AccountID = A.AccountID
+    INNER JOIN dbo.DisputeStatuses DS WITH(NOLOCK) 
+        ON D.DisputeStatusID = DS.DisputeStatusID
+    WHERE A.CustomerID = @CustomerID
+    ORDER BY D.CreatedAt DESC;
+END;
+GO
+--==============================================================================
+--Author:  Adhil Sewrathan
+--DateCreated: 2026-09-06
+--Description:  Gets Customer details by email and password
+--==============================================================================
+CREATE OR ALTER PROCEDURE dbo.GetCustomerDetailsByEmailAndPassword
+    @Email NVARCHAR(255),
+    @PasswordHash NVARCHAR(255)
 AS
 BEGIN
     SET NOCOUNT ON;
     
-SELECT 
-       AccountID
-      ,AccountNumber
-      ,CustomerID
-      ,AccountType
-      ,Balance
-      ,CreatedAt
-    FROM dbo.Accounts A WITH(NOLOCK)
-    WHERE A.CustomerID = @CustomerID;
+SELECT  CustomerID, 
+        FirstName, 
+        LastName, 
+        Email
+FROM dbo.Customers  WITH(NOLOCK)
+WHERE Email = @Email AND PasswordHash = @PasswordHash;
 
 END
 GO

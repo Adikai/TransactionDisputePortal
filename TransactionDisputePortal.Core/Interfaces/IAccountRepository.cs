@@ -8,6 +8,7 @@ namespace TransactionDisputePortal.Core.Interfaces
     public interface IAccountRepository
     {
         Task<decimal> UpdateAccountBalance(UpdateBalanceRequestDTO request);
-        Task<AccountDTOResponse> GetAccountDetails(int customerID);
+        Task<LoginResponseDto> loginCustomer(LoginRequestDto loginRequest);
+        Task<CustomerDashboardResponseDto> GetCustomerDashboardAsync(int customerId);
     }
 }

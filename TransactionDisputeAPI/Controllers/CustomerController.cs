@@ -22,19 +22,24 @@ namespace TransactionDisputePortal.API.Controllers
         [HttpPost("login")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public IActionResult Login([FromBody] LoginRequestDto loginRequest)
+        public async Task<IActionResult> Login([FromBody] LoginRequestDto loginRequest)
         {
-            //Keeping it simple here to save time. 
-            //Normally I'd check the credentials against a database and generate a JWT token if valid.
-            //Store that Token into both Redis or a secure cookie for future requests.
-            if (loginRequest.Email == "john.doe@example.com" && loginRequest.Password == "AQAAAAIAAYagAAAAE...")
+            var customer = await _accountRepository.loginCustomer(loginRequest);
+
+            if (customer == null)
             {
-                return Ok("dummy-token");
+                return Unauthorized("Invalid email or password.");
             }
-            else
-            {
-                return Unauthorized();
-            }
+
+            var response = new LoginResponseDto(
+                customer.CustomerID,
+                "dummy-token-xyz123", //Using dummy token for demonstration purposes. In a real application,I would generate a JWT token.
+                customer.FirstName,
+                customer.LastName,
+                customer.Email
+            );
+
+            return Ok(response);
         }
 
         [HttpPost("UpdateBalance")]
@@ -60,19 +65,19 @@ namespace TransactionDisputePortal.API.Controllers
             }
         }
 
-        [HttpGet("GetAccountDetails/{customerID}")]
-        [ProducesResponseType(typeof(AccountDTOResponse), StatusCodes.Status200OK)]
+        [HttpGet("GetCustomerDashboard/{customerID}")]
+        [ProducesResponseType(typeof(CustomerDashboardResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public IActionResult GetAccountDetails(int customerID)
+        public async Task<IActionResult> GetCustomerDashboard(int customerID)
         {
             try
             {
-                var accountDetails = _accountRepository.GetAccountDetails(customerID).Result;
-                return Ok(accountDetails);
+                var dashboardData = await _accountRepository.GetCustomerDashboardAsync(customerID);
+                return Ok(dashboardData);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while fetching account details.");
+                _logger.LogError(ex, "An error occurred while fetching customer dashboard data.");
                 return BadRequest(ex.Message);
                 throw;
             }

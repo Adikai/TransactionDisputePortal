@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Text;
 using TransactionDisputePortal.Core.Interfaces;
 using TransactionDisputePortal.Shared.Models.DTO;
@@ -27,15 +28,45 @@ namespace TransactionDisputePortal.Infrastructure.Repositories
             return UpdatedBalance;
         }
 
-        public async Task<AccountDTOResponse> GetAccountDetails(int customerID)
+        public async Task<CustomerDashboardResponseDto> GetCustomerDashboardAsync(int customerId)
         {
-            var account = await _sqlExecuter.QueryFirstOrDefaultAsync<AccountDTOResponse>(
-                "[dbo].[GetAccountDetailsByCustomerID]",
-                new { CustomerID = customerID },
+            var param = new { CustomerID = customerId };
+
+            // Execute all 3 procedures asynchronously in parallel
+            var accountsTask = _sqlExecuter.QueryAsync<AccountSummaryDto>(
+                "dbo.GetAccountsByCustomerID", param, commandType: CommandType.StoredProcedure);
+
+            var metricsTask = _sqlExecuter.QueryFirstOrDefaultAsync<CustomerMetricsDto>(
+                "dbo.GetCustomerDashboardMetrics", param, commandType: CommandType.StoredProcedure);
+
+            var disputesTask = _sqlExecuter.QueryAsync<RecentDisputeDto>(
+                "dbo.GetRecentDisputesByCustomerID", param, commandType: CommandType.StoredProcedure);
+
+            await Task.WhenAll(accountsTask, metricsTask, disputesTask);
+
+            var accounts = (await accountsTask).ToList();
+            var metrics = await metricsTask ?? new CustomerMetricsDto(0, 0, 0, 0);
+            var recentDisputes = (await disputesTask).ToList();
+
+            return new CustomerDashboardResponseDto(accounts, metrics, recentDisputes);
+        }
+        public async Task<LoginResponseDto?> loginCustomer(LoginRequestDto loginRequest)
+        {
+            var row = await _sqlExecuter.QueryFirstOrDefaultAsync<dynamic>(
+                "[dbo].[GetCustomerDetailsByEmailAndPassword]",
+                new { Email = loginRequest.Email, PasswordHash = loginRequest.PasswordHash },
                 commandType: System.Data.CommandType.StoredProcedure
             );
 
-            return account;
-        }
+            if (row == null) return null;
+
+            return new LoginResponseDto(
+                (int)row.CustomerID,
+                (string)row.FirstName,
+                (string)row.LastName,
+                (string)row.Email,
+                null
+            );
+            }
     }
 }

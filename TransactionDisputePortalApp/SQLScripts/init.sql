@@ -136,40 +136,184 @@ BEGIN
 END
 GO
 
+IF OBJECT_ID(N'dbo.AccountBalanceAuditLogs', N'U') IS NULL
+BEGIN
+    CREATE TABLE AccountBalanceAuditLogs (
+        AuditLogID BIGINT IDENTITY(1,1) PRIMARY KEY,
+        AccountID INT NOT NULL,
+        PreviousBalance DECIMAL(18, 2) NOT NULL,
+        NewBalance DECIMAL(18, 2) NOT NULL,
+        Reason NVARCHAR(250) NULL,
+        Timestamp DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET(),
+        CONSTRAINT FK_BalanceAudit_Accounts FOREIGN KEY (AccountID) REFERENCES Accounts(AccountID)
+    );
+END
+GO
+
 -- 4. Idempotent Data Seeding
 
--- Reference Data
+-- 4.1. Reference Data
 IF NOT EXISTS (SELECT 1 FROM Roles WHERE RoleName = 'DisputeAnalyst')
     INSERT INTO Roles (RoleName) VALUES ('DisputeAnalyst'), ('Admin');
 
 IF NOT EXISTS (SELECT 1 FROM TransactionStatuses WHERE StatusID = 1)
     INSERT INTO TransactionStatuses (StatusID, StatusName) VALUES 
-    (1, 'Posted'), (2, 'Pending'), (3, 'Reversed');
+    (1, 'Posted'), 
+    (2, 'Pending'), 
+    (3, 'Reversed');
 
 IF NOT EXISTS (SELECT 1 FROM DisputeStatuses WHERE DisputeStatusID = 1)
     INSERT INTO DisputeStatuses (DisputeStatusID, StatusName) VALUES 
-    (1, 'Submitted'), (2, 'Under Review'), (3, 'Approved'), (4, 'Rejected');
+    (1, 'Submitted'), 
+    (2, 'Under Review'), 
+    (3, 'Approved'), 
+    (4, 'Rejected');
 
--- Sample Customers & Staff
+-- 4.2. Sample Customers & Staff
 IF NOT EXISTS (SELECT 1 FROM Customers WHERE Email = 'john.doe@example.com')
     INSERT INTO Customers (FirstName, LastName, Email, PhoneNumber, PasswordHash) 
-    VALUES ('John', 'Doe', 'john.doe@example.com', '+27821234567', 'AQAAAAIAAYagAAAAE...'); -- Dummy Hash
+    VALUES ('John', 'Doe', 'john.doe@example.com', '+27821234567', 'AQAAAAIAAYagAAAAE...'); 
+
+IF NOT EXISTS (SELECT 1 FROM Customers WHERE Email = 'jane.smith@example.com')
+    INSERT INTO Customers (FirstName, LastName, Email, PhoneNumber, PasswordHash) 
+    VALUES ('Jane', 'Smith', 'jane.smith@example.com', '+27839876543', 'AQAAAAIAAYagAAAAE...');
 
 IF NOT EXISTS (SELECT 1 FROM StaffUsers WHERE Email = 'analyst@bank.com')
     INSERT INTO StaffUsers (Username, FullName, Email, RoleID, PasswordHash)
     VALUES ('bank_analyst', 'Sarah Connor', 'analyst@bank.com', 1, 'AQAAAAIAAYagAAAAE...');
 
--- Sample Account & Transactions
+-- 4.3. Accounts Seeding
 IF NOT EXISTS (SELECT 1 FROM Accounts WHERE AccountNumber = 'ACC-987654321')
     INSERT INTO Accounts (AccountNumber, CustomerID, AccountType, Balance)
-    VALUES ('ACC-987654321', 1, 'Checking', 15400.50);
+    VALUES ('ACC-987654321', (SELECT CustomerID FROM Customers WHERE Email = 'john.doe@example.com'), 'Checking', 15400.50);
 
+IF NOT EXISTS (SELECT 1 FROM Accounts WHERE AccountNumber = 'ACC-112233445')
+    INSERT INTO Accounts (AccountNumber, CustomerID, AccountType, Balance)
+    VALUES ('ACC-112233445', (SELECT CustomerID FROM Customers WHERE Email = 'john.doe@example.com'), 'Savings', 42850.00);
+
+IF NOT EXISTS (SELECT 1 FROM Accounts WHERE AccountNumber = 'ACC-556677889')
+    INSERT INTO Accounts (AccountNumber, CustomerID, AccountType, Balance)
+    VALUES ('ACC-556677889', (SELECT CustomerID FROM Customers WHERE Email = 'john.doe@example.com'), 'Credit Card', 8200.75);
+
+IF NOT EXISTS (SELECT 1 FROM Accounts WHERE AccountNumber = 'ACC-998877665')
+    INSERT INTO Accounts (AccountNumber, CustomerID, AccountType, Balance)
+    VALUES ('ACC-998877665', (SELECT CustomerID FROM Customers WHERE Email = 'jane.smith@example.com'), 'Checking', 6450.20);
+
+-- 4.4. Transactions Seeding
+-- Customer 1 - Account 1 (Checking)
 IF NOT EXISTS (SELECT 1 FROM Transactions WHERE ReferenceNumber = 'TXN-2026-001')
-BEGIN
     INSERT INTO Transactions (AccountID, MerchantName, TransactionDate, Amount, TransactionType, ReferenceNumber, StatusID)
-    VALUES 
-    (1, 'Uber Eats', SYSDATETIMEOFFSET(), 249.99, 'Card Purchase', 'TXN-2026-001', 1),
-    (1, 'Amazon Web Services', SYSDATETIMEOFFSET(), 1250.00, 'Card Purchase', 'TXN-2026-002', 1),
-    (1, 'Unknown International Merchant', SYSDATETIMEOFFSET(), 4500.00, 'Card Purchase', 'TXN-2026-003', 1);
+    VALUES ((SELECT AccountID FROM Accounts WHERE AccountNumber = 'ACC-987654321'), 'Uber Eats', DATEADD(DAY, -1, SYSDATETIMEOFFSET()), 249.99, 'Card Purchase', 'TXN-2026-001', 1);
+
+IF NOT EXISTS (SELECT 1 FROM Transactions WHERE ReferenceNumber = 'TXN-2026-002')
+    INSERT INTO Transactions (AccountID, MerchantName, TransactionDate, Amount, TransactionType, ReferenceNumber, StatusID)
+    VALUES ((SELECT AccountID FROM Accounts WHERE AccountNumber = 'ACC-987654321'), 'Amazon Web Services', DATEADD(DAY, -4, SYSDATETIMEOFFSET()), 1250.00, 'Card Purchase', 'TXN-2026-002', 1);
+
+IF NOT EXISTS (SELECT 1 FROM Transactions WHERE ReferenceNumber = 'TXN-2026-003')
+    INSERT INTO Transactions (AccountID, MerchantName, TransactionDate, Amount, TransactionType, ReferenceNumber, StatusID)
+    VALUES ((SELECT AccountID FROM Accounts WHERE AccountNumber = 'ACC-987654321'), 'Unknown International Merchant', DATEADD(DAY, -6, SYSDATETIMEOFFSET()), 4500.00, 'Card Purchase', 'TXN-2026-003', 1);
+
+IF NOT EXISTS (SELECT 1 FROM Transactions WHERE ReferenceNumber = 'TXN-2026-004')
+    INSERT INTO Transactions (AccountID, MerchantName, TransactionDate, Amount, TransactionType, ReferenceNumber, StatusID)
+    VALUES ((SELECT AccountID FROM Accounts WHERE AccountNumber = 'ACC-987654321'), 'Takealot Online', DATEADD(DAY, -10, SYSDATETIMEOFFSET()), 899.00, 'Card Purchase', 'TXN-2026-004', 1);
+
+IF NOT EXISTS (SELECT 1 FROM Transactions WHERE ReferenceNumber = 'TXN-2026-005')
+    INSERT INTO Transactions (AccountID, MerchantName, TransactionDate, Amount, TransactionType, ReferenceNumber, StatusID)
+    VALUES ((SELECT AccountID FROM Accounts WHERE AccountNumber = 'ACC-987654321'), 'Woolworths Food', DATEADD(DAY, -12, SYSDATETIMEOFFSET()), 654.30, 'Card Purchase', 'TXN-2026-005', 1);
+
+-- Customer 1 - Account 2 (Savings)
+IF NOT EXISTS (SELECT 1 FROM Transactions WHERE ReferenceNumber = 'TXN-2026-006')
+    INSERT INTO Transactions (AccountID, MerchantName, TransactionDate, Amount, TransactionType, ReferenceNumber, StatusID)
+    VALUES ((SELECT AccountID FROM Accounts WHERE AccountNumber = 'ACC-112233445'), 'Interest Earned', DATEADD(DAY, -15, SYSDATETIMEOFFSET()), 350.00, 'Credit', 'TXN-2026-006', 1);
+
+-- Customer 1 - Account 3 (Credit Card)
+IF NOT EXISTS (SELECT 1 FROM Transactions WHERE ReferenceNumber = 'TXN-2026-007')
+    INSERT INTO Transactions (AccountID, MerchantName, TransactionDate, Amount, TransactionType, ReferenceNumber, StatusID)
+    VALUES ((SELECT AccountID FROM Accounts WHERE AccountNumber = 'ACC-556677889'), 'Apple Store Online', DATEADD(DAY, -3, SYSDATETIMEOFFSET()), 18999.00, 'Card Purchase', 'TXN-2026-007', 1);
+
+IF NOT EXISTS (SELECT 1 FROM Transactions WHERE ReferenceNumber = 'TXN-2026-008')
+    INSERT INTO Transactions (AccountID, MerchantName, TransactionDate, Amount, TransactionType, ReferenceNumber, StatusID)
+    VALUES ((SELECT AccountID FROM Accounts WHERE AccountNumber = 'ACC-556677889'), 'Phishing Tech Ltd', DATEADD(DAY, -5, SYSDATETIMEOFFSET()), 3200.00, 'Card Purchase', 'TXN-2026-008', 1);
+
+IF NOT EXISTS (SELECT 1 FROM Transactions WHERE ReferenceNumber = 'TXN-2026-009')
+    INSERT INTO Transactions (AccountID, MerchantName, TransactionDate, Amount, TransactionType, ReferenceNumber, StatusID)
+    VALUES ((SELECT AccountID FROM Accounts WHERE AccountNumber = 'ACC-556677889'), 'Shell Fuel Station', DATEADD(DAY, -8, SYSDATETIMEOFFSET()), 750.00, 'Card Purchase', 'TXN-2026-009', 1);
+
+-- Customer 2 - Account 4 (Checking)
+IF NOT EXISTS (SELECT 1 FROM Transactions WHERE ReferenceNumber = 'TXN-2026-010')
+    INSERT INTO Transactions (AccountID, MerchantName, TransactionDate, Amount, TransactionType, ReferenceNumber, StatusID)
+    VALUES ((SELECT AccountID FROM Accounts WHERE AccountNumber = 'ACC-998877665'), 'Checkers Hyper', DATEADD(DAY, -2, SYSDATETIMEOFFSET()), 1120.50, 'Card Purchase', 'TXN-2026-010', 1);
+
+-- 4.5. Disputes Seeding
+-- Dispute 1: Submitted (Customer 1 - Checking Account - TXN-2026-003)
+IF NOT EXISTS (SELECT 1 FROM Disputes WHERE TransactionID = (SELECT TransactionID FROM Transactions WHERE ReferenceNumber = 'TXN-2026-003'))
+BEGIN
+    INSERT INTO Disputes (TransactionID, CustomerID, DisputeStatusID, ReasonCategory, CustomerNotes, DisputedAmount, CreatedAt, UpdatedAt)
+    VALUES (
+        (SELECT TransactionID FROM Transactions WHERE ReferenceNumber = 'TXN-2026-003'),
+        (SELECT CustomerID FROM Customers WHERE Email = 'john.doe@example.com'),
+        1, -- Submitted
+        'Fraudulent Charge',
+        'I did not make or authorize this overseas transaction.',
+        4500.00,
+        DATEADD(DAY, -5, SYSDATETIMEOFFSET()),
+        DATEADD(DAY, -5, SYSDATETIMEOFFSET())
+    );
+END
+
+-- Dispute 2: Under Review (Customer 1 - Checking Account - TXN-2026-002)
+IF NOT EXISTS (SELECT 1 FROM Disputes WHERE TransactionID = (SELECT TransactionID FROM Transactions WHERE ReferenceNumber = 'TXN-2026-002'))
+BEGIN
+    INSERT INTO Disputes (TransactionID, CustomerID, DisputeStatusID, ReasonCategory, CustomerNotes, DisputedAmount, CreatedAt, UpdatedAt)
+    VALUES (
+        (SELECT TransactionID FROM Transactions WHERE ReferenceNumber = 'TXN-2026-002'),
+        (SELECT CustomerID FROM Customers WHERE Email = 'john.doe@example.com'),
+        2, -- Under Review
+        'Incorrect Amount',
+        'My monthly subscription was billed twice instead of once.',
+        1250.00,
+        DATEADD(DAY, -3, SYSDATETIMEOFFSET()),
+        DATEADD(DAY, -1, SYSDATETIMEOFFSET())
+    );
+END
+
+-- Dispute 3: Submitted (Customer 1 - Credit Card Account - TXN-2026-008)
+IF NOT EXISTS (SELECT 1 FROM Disputes WHERE TransactionID = (SELECT TransactionID FROM Transactions WHERE ReferenceNumber = 'TXN-2026-008'))
+BEGIN
+    INSERT INTO Disputes (TransactionID, CustomerID, DisputeStatusID, ReasonCategory, CustomerNotes, DisputedAmount, CreatedAt, UpdatedAt)
+    VALUES (
+        (SELECT TransactionID FROM Transactions WHERE ReferenceNumber = 'TXN-2026-008'),
+        (SELECT CustomerID FROM Customers WHERE Email = 'john.doe@example.com'),
+        1, -- Submitted
+        'Fraudulent Charge',
+        'Card details were compromised. Unknown transaction.',
+        3200.00,
+        DATEADD(DAY, -2, SYSDATETIMEOFFSET()),
+        DATEADD(DAY, -2, SYSDATETIMEOFFSET())
+    );
+END
+
+-- Dispute 4: Approved (Customer 1 - Checking Account - TXN-2026-004)
+IF NOT EXISTS (SELECT 1 FROM Disputes WHERE TransactionID = (SELECT TransactionID FROM Transactions WHERE ReferenceNumber = 'TXN-2026-004'))
+BEGIN
+    INSERT INTO Disputes (TransactionID, CustomerID, DisputeStatusID, ReasonCategory, CustomerNotes, DisputedAmount, CreatedAt, UpdatedAt)
+    VALUES (
+        (SELECT TransactionID FROM Transactions WHERE ReferenceNumber = 'TXN-2026-004'),
+        (SELECT CustomerID FROM Customers WHERE Email = 'john.doe@example.com'),
+        3, -- Approved
+        'Goods Not Received',
+        'Item order was cancelled by seller but charge was not refunded.',
+        899.00,
+        DATEADD(DAY, -9, SYSDATETIMEOFFSET()),
+        DATEADD(DAY, -7, SYSDATETIMEOFFSET())
+    );
+END
+
+-- 4.6. Dispute Audit Logs
+IF NOT EXISTS (SELECT 1 FROM DisputeAuditLogs WHERE Notes = 'Initial dispute submitted by customer.')
+BEGIN
+    INSERT INTO DisputeAuditLogs (DisputeID, PreviousStatusID, NewStatusID, ChangedByCustomerID, Notes, Timestamp)
+    SELECT DisputeID, NULL, 1, CustomerID, 'Initial dispute submitted by customer.', CreatedAt
+    FROM Disputes;
 END
 GO

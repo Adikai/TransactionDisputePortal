@@ -17,7 +17,7 @@
 
             <div class="mb-3">
                 <label class="form-label">Password</label>
-                <InputText @bind-Value="loginModel.Password" type="password" class="form-control" />
+                <InputText @bind-Value="loginModel.PasswordHash" type="password" class="form-control" />
             </div>
 
             <button type="submit" class="btn btn-primary w-100" disabled="@isLoading">
@@ -31,54 +31,3 @@
         </EditForm>
     </div>
 </div>
-
-@code {
-    private LoginRequestDto loginModel = new LoginRequestDto
-    {
-        Email = "john.doe@example.com",
-        Password = "AQAAAAIAAYagAAAAE..."
-    };
-
-    private bool isLoading;
-    private string? errorMessage;
-
-    private async Task HandleLogin()
-    {
-        isLoading = true;
-        errorMessage = null;
-
-        try
-        {
-            var response = await Http.PostAsJsonAsync("api/Customer/login", loginModel);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var token = await response.Content.ReadAsStringAsync();
-
-                if (!string.IsNullOrWhiteSpace(token))
-                {
-                    await AuthService.SetTokenAsync(token);
-                    Navigation.NavigateTo("/", replace: true);
-                    return;
-                }
-
-                errorMessage = "Received invalid authentication token.";
-            }
-            else
-            {
-                var errorResponse = await response.Content.ReadAsStringAsync();
-                errorMessage = !string.IsNullOrWhiteSpace(errorResponse)
-                    ? errorResponse
-                    : "Login failed. Please check your credentials.";
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"An unexpected error occurred: {ex.Message}";
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
-}
