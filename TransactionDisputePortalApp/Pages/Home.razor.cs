@@ -30,23 +30,23 @@ namespace TransactionDisputePortal.Client.Pages
             errorMessage = null;
 
             var token = await AuthService.GetTokenAsync();
-            var customerId = await AuthService.GetCustomerIdAsync();
+            var userId = await AuthService.GetUserIDAsync();
 
-            if (string.IsNullOrEmpty(token) || !customerId.HasValue)
+            if (string.IsNullOrEmpty(token) || !userId.HasValue)
             {
                 Navigation.NavigateTo("/login", replace: true);
                 return;
             }
 
-            await LoadDashboardDataAsync(customerId.Value);
+            await LoadDashboardDataAsync(userId.Value);
         }
 
-        private async Task LoadDashboardDataAsync(int customerId)
+        private async Task LoadDashboardDataAsync(int userId)
         {
             try
             {
                 dashboardData = await Http.GetFromJsonAsync<CustomerDashboardResponseDto>(
-                    $"api/Customer/GetCustomerDashboard/{customerId}");
+                    $"api/Customer/GetCustomerDashboard/{userId}");
 
                 if (dashboardData?.Accounts.Any() == true)
                 {
@@ -65,11 +65,11 @@ namespace TransactionDisputePortal.Client.Pages
 
         private async Task LoadDashboardDataAsync()
         {
-            var customerId = await AuthService.GetCustomerIdAsync();
-            if (customerId.HasValue)
+            var userId = await AuthService.GetUserIDAsync();
+            if (userId.HasValue)
             {
                 isLoading = true;
-                await LoadDashboardDataAsync(customerId.Value);
+                await LoadDashboardDataAsync(userId.Value);
             }
             else
             {

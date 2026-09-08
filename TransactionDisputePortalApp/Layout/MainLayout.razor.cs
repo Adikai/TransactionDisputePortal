@@ -41,9 +41,9 @@ namespace TransactionDisputePortal.Client.Layout
 
             if (!isLoginPage)
             {
-                var customerId = await Auth.GetCustomerIdAsync();
+                var userID = await Auth.GetUserIDAsync();
 
-                if (!customerId.HasValue)
+                if (!userID.HasValue)
                 {
                     isCheckingAuth = false;
                     Navigation.NavigateTo("login");

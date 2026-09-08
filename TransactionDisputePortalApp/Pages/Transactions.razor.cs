@@ -30,13 +30,13 @@ namespace TransactionDisputePortal.Client.Pages
         private string? errorMessage;
         private string? successMessage;
 
-        private int CustomerID;
+        private int UserID;
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             if (firstRender)
             {
-                CustomerID = (int)await AuthService.GetCustomerIdAsync();
+                UserID = (int)await AuthService.GetUserIDAsync();
                 await LoadCustomerAccountsAsync();
                 StateHasChanged();
             }
@@ -46,7 +46,7 @@ namespace TransactionDisputePortal.Client.Pages
         {
             try
             {
-                var response = await Http.GetFromJsonAsync<List<AccountDTOResponse>>($"api/Customer/Accounts/{CustomerID}");
+                var response = await Http.GetFromJsonAsync<List<AccountDTOResponse>>($"api/Customer/Accounts/{UserID}");
 
                 if (response != null && response.Any())
                 {
@@ -103,7 +103,7 @@ namespace TransactionDisputePortal.Client.Pages
             disputeModel = new CreateDisputeRequestDTO
             {
                 TransactionID = transaction.TransactionID,
-                CustomerID = CustomerID,
+                CustomerID = UserID,
                 DisputeStatusID = (int)DisputeStatusEnum.Submitted,
                 DisputedAmount = transaction.Amount,
                 ReasonCategory = "",

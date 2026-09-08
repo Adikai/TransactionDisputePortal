@@ -33,13 +33,15 @@ namespace TransactionDisputePortal.API.Controllers
                 return Unauthorized("Invalid email or password.");
             }
 
-            var response = new LoginResponseDto(
-                customer.CustomerID,
-                customer.FirstName,
-                customer.LastName,
-                customer.Email,
-                "dummy-token-xyz123" //Using dummy token for demonstration purposes. In a real application,I would generate a JWT token.
-            );
+            var response = new LoginResponseDto
+                 {
+                UserID = customer.UserID,
+                FirstName = customer.DisplayName,
+                LastName = customer.LastName,
+                Email = customer.Email,
+                UserRole = customer.UserRole,
+                Token = "dummy-Token-xyz" // added dummy token for demonstration purposes, I would normally generate a JWT token here for authentication.
+            };
 
             return Ok(response);
         }

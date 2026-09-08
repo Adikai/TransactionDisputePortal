@@ -60,13 +60,15 @@ namespace TransactionDisputePortal.Infrastructure.Repositories
 
             if (row == null) return null;
 
-            return new LoginResponseDto(
-                (int)row.CustomerID,
-                (string)row.FirstName,
-                (string)row.LastName,
-                (string)row.Email,
-                null
-            );
+            return new LoginResponseDto
+            {
+                UserID = (int)row.UserID,
+                FirstName = (string)row.FirstName,
+                LastName = (string)row.LastName,
+                Email = (string)row.Email,
+                UserRole = (string?)row.UserRole,
+                Token = null
+            };
         }
         public async Task<List<AccountSummaryDto>> GetAccountNumbersByCustomerID(int customerID)
         {
@@ -77,6 +79,17 @@ namespace TransactionDisputePortal.Infrastructure.Repositories
             );
 
             return accountNumbers.ToList();
+        }
+
+        public async Task<IEnumerable<AdminDisputesResponseDTO>> GetDisputesForAdminAsync(int pageNumber, int pageSize, int disputeStatusID, string searchTerm)
+        {
+            var param = new { PageNumber = pageNumber, PageSize = pageSize, DisputeStatusID = disputeStatusID, SearchTerm = searchTerm };
+            var disputesTask = _sqlExecuter.QueryAsync<AdminDisputesResponseDTO>(
+                "dbo.GetDisputesForAdmin", param, commandType: CommandType.StoredProcedure);
+            
+            var disputes = (await disputesTask).ToList();
+
+            return disputes;
         }
     }
 }

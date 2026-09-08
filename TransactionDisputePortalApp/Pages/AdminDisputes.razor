@@ -1,0 +1,91 @@
+﻿@page "/admin/disputes"
+@using TransactionDisputePortal.Shared.Models.DTO
+@inject AuthService Auth
+@inject NavigationManager Navigation
+@inject HttpClient Http
+
+<div class="container-fluid p-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Dispute Management</h3>
+            <p class="text-muted mb-0">Review pending customer disputes and update resolution statuses.</p>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold">Filter by Status</label>
+                    <select class="form-select" @onchange="OnStatusFilterChanged">
+                        <option value="0">All Statuses</option>
+                        <option value="1">Submitted</option>
+                        <option value="2">Under Review</option>
+                        <option value="3">Approved</option>
+                        <option value="4">Rejected</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Disputes Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Dispute ID</th>
+                            <th>Reference</th>
+                            <th>Account</th>
+                            <th>Amount</th>
+                            <th>Created Date</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (isLoading)
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-4">
+                                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                                    Loading disputes...
+                                </td>
+                            </tr>
+                        }
+                        else if (disputes == null || !disputes.Any())
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">No disputes found.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in disputes)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">#@item.DisputeID</td>
+                                    <td>@item.ReferenceNumber</td>
+                                    <td>@item.AccountNumber</td>
+                                    <td class="fw-bold">@item.DisputedAmount.ToString("C")</td>
+                                    <td>@item.CreatedDate.ToString("yyyy-MM-dd")</td>
+                                    <td>
+                                        <StatusBadge StatusId="@item.DisputeStatusID" StatusName="@item.DisputeStatus" />
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-outline-primary btn-sm" @onclick="() => OpenReviewModal(item)">
+                                            Review & Update
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

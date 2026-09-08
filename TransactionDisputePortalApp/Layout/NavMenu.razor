@@ -1,4 +1,4 @@
-﻿@inject NavigationManager Navigation
+﻿@inject AuthService Auth
 
 <div class="sidebar-header ps-3 py-3 bg-dark border-bottom border-secondary">
     <a class="navbar-brand fw-bold text-white d-flex align-items-center gap-2 m-0" href="">
@@ -9,34 +9,43 @@
 
 <div class="nav-scrollable">
     <nav class="flex-column p-2">
-        <div class="text-uppercase text-white-50 small fw-bold px-3 my-2" style="letter-spacing: 0.05rem;">Main Menu</div>
-
-        <!-- Dashboard -->
-        <div class="nav-item px-1 mb-1">
-            <NavLink class="nav-link text-white rounded px-3 py-2" href="" Match="NavLinkMatch.All">
-                <i class="bi bi-speedometer2 me-2 text-info"></i> Dashboard
-            </NavLink>
+        <div class="text-uppercase text-white-50 small fw-bold px-3 my-2" style="letter-spacing: 0.05rem;">
+            @(isStaff ? "Staff Menu" : "Customer Menu")
         </div>
 
-        <!-- Transactions -->
-        <div class="nav-item px-1 mb-1">
-            <NavLink class="nav-link text-white rounded px-3 py-2" href="transactions">
-                <i class="bi bi-receipt-cutoff me-2 text-info"></i> Transactions
-            </NavLink>
-        </div>
-
-        <!-- Track Disputes -->
-        <div class="nav-item px-1 mb-1">
-            <NavLink class="nav-link text-white rounded px-3 py-2" href="disputes">
-                <i class="bi bi-exclamation-triangle me-2 text-info"></i> Track Disputes
-            </NavLink>
-        </div>
+        @if (!isStaff)
+        {
+            <!-- Customer Links -->
+            <div class="nav-item px-1 mb-1">
+                <NavLink class="nav-link text-white rounded px-3 py-2" href="" Match="NavLinkMatch.All">
+                    <i class="bi bi-speedometer2 me-2 text-info"></i> Dashboard
+                </NavLink>
+            </div>
+            <div class="nav-item px-1 mb-1">
+                <NavLink class="nav-link text-white rounded px-3 py-2" href="transactions">
+                    <i class="bi bi-receipt-cutoff me-2 text-info"></i> Transactions
+                </NavLink>
+            </div>
+            <div class="nav-item px-1 mb-1">
+                <NavLink class="nav-link text-white rounded px-3 py-2" href="disputes">
+                    <i class="bi bi-exclamation-triangle me-2 text-info"></i> Track Disputes
+                </NavLink>
+            </div>
+        }
+        else
+        {
+            <!-- Staff / Admin Links -->
+            <div class="nav-item px-1 mb-1">
+                <NavLink class="nav-link text-white rounded px-3 py-2" href="admin/disputes" Match="NavLinkMatch.All">
+                    <i class="bi bi-kanban me-2 text-warning"></i> Manage Disputes
+                </NavLink>
+            </div>
+        }
 
         <hr class="border-secondary my-3 mx-2" />
 
         <div class="text-uppercase text-white-50 small fw-bold px-3 mb-2" style="letter-spacing: 0.05rem;">Account</div>
 
-        <!-- Switch Account -->
         <div class="nav-item px-1">
             <NavLink class="nav-link text-white rounded px-3 py-2" href="login">
                 <i class="bi bi-box-arrow-right me-2 text-warning"></i> Switch Account
@@ -44,3 +53,16 @@
         </div>
     </nav>
 </div>
+
+@code {
+    private bool isStaff = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isStaff = await Auth.IsStaffAsync();
+            StateHasChanged();
+        }
+    }
+}

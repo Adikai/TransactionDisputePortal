@@ -13,14 +13,14 @@ namespace TransactionDisputePortal.Client.Pages
         private string? errorMessage;
         private string searchQuery = string.Empty;
         private string selectedStatusFilter = string.Empty;
-        private int CustomerID;
+        private int UserID;
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             if (firstRender)
             {
-                CustomerID = (int)await AuthService.GetCustomerIdAsync();
-                if (CustomerID > 0)
+                UserID = (int)await AuthService.GetUserIDAsync();
+                if (UserID > 0)
                 {
                     await LoadDisputesAsync();
                 }
@@ -41,7 +41,7 @@ namespace TransactionDisputePortal.Client.Pages
 
             try
             {
-                disputes = await Http.GetFromJsonAsync<List<DisputeResponseDto>>($"api/Transactions/disputes/customer/{CustomerID}");
+                disputes = await Http.GetFromJsonAsync<List<DisputeResponseDto>>($"api/Transactions/disputes/customer/{UserID}");
             }
             catch (Exception ex)
             {

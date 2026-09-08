@@ -290,12 +290,31 @@ AS
 BEGIN
     SET NOCOUNT ON;
     
-SELECT  CustomerID, 
-        FirstName, 
-        LastName, 
-        Email
-FROM dbo.Customers  WITH(NOLOCK)
-WHERE Email = @Email AND PasswordHash = @PasswordHash;
+-- Check Customers
+    SELECT 
+        c.CustomerID AS UserID,
+        c.FirstName,
+        c.LastName,
+        c.Email,
+        'Customer' AS UserRole
+    FROM dbo.Customers c WITH(NOLOCK)
+    WHERE c.Email = @Email 
+      AND c.PasswordHash = @PasswordHash
+
+    UNION ALL
+
+    -- Check Staff Users
+    SELECT 
+        s.StaffID AS UserID,
+        s.FullName AS FirstName,
+        '' AS LastName,
+        s.Email,
+        r.RoleName AS UserRole
+    FROM dbo.StaffUsers s WITH(NOLOCK)
+    INNER JOIN dbo.Roles r WITH(NOLOCK) 
+        ON s.RoleID = r.RoleID
+    WHERE s.Email = @Email 
+      AND s.PasswordHash = @PasswordHash;
 
 END
 GO
@@ -355,6 +374,51 @@ BEGIN
     INNER JOIN dbo.DisputeStatuses ds ON d.DisputeStatusID = ds.disputeStatusID
     WHERE d.DisputeID = @DisputeID
     ORDER BY d.CreatedAt DESC;
+END;
+GO
+--==============================================================================
+--Author:      Adhil Sewrathan
+--DateCreated: 2026-09-08
+--Description: Gets paginated disputes with optional filtering for Admin Portal
+--==============================================================================
+CREATE OR ALTER PROCEDURE [dbo].[GetAllDisputes]
+    @PageNumber INT = 1,
+    @PageSize INT = 20,
+    @DisputeStatusID INT = NULL,
+    @SearchTerm NVARCHAR(100) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+    -- Guard clauses for pagination parameters
+    IF @PageNumber < 1 SET @PageNumber = 1;
+    IF @PageSize < 1 OR @PageSize > 100 SET @PageSize = 20;
+
+    SELECT 
+        d.DisputeID,
+        d.TransactionID,
+        t.ReferenceNumber,
+        t.MerchantName,
+        d.DisputedAmount,
+        d.ReasonCategory,
+        d.DisputeStatusID,
+        ds.StatusName AS DisputeStatus,
+        d.CreatedAt AS CreatedDateCreatedAt,
+        d.UpdatedAt AS LastUpdatedDate,
+        COUNT(1) OVER() AS TotalRecords
+    FROM dbo.Disputes d WITH(NOLOCK)
+    INNER JOIN dbo.Transactions t WITH(NOLOCK) ON d.TransactionID = t.TransactionID
+    INNER JOIN dbo.DisputeStatuses ds WITH(NOLOCK) ON d.DisputeStatusID = ds.disputeStatusID
+    WHERE (@DisputeStatusID IS NULL OR d.DisputeStatusID = @DisputeStatusID)
+      AND (
+            @SearchTerm IS NULL 
+            OR t.ReferenceNumber LIKE '%' + @SearchTerm + '%' 
+            OR t.MerchantName LIKE '%' + @SearchTerm + '%'
+          )
+    ORDER BY d.CreatedAt DESC
+    OFFSET (@PageNumber - 1) * @PageSize ROWS
+    FETCH NEXT @PageSize ROWS ONLY;
 END;
 GO
 --==============================================================================

@@ -154,7 +154,7 @@ GO
 
 -- 4.1. Reference Data
 IF NOT EXISTS (SELECT 1 FROM Roles WHERE RoleName = 'DisputeAnalyst')
-    INSERT INTO Roles (RoleName) VALUES ('DisputeAnalyst'), ('Admin');
+    INSERT INTO Roles (RoleName) VALUES ('DisputeAnalyst'), ('Admin'),('Customer');
 
 IF NOT EXISTS (SELECT 1 FROM TransactionStatuses WHERE StatusID = 1)
     INSERT INTO TransactionStatuses (StatusID, StatusName) VALUES 
@@ -180,7 +180,7 @@ IF NOT EXISTS (SELECT 1 FROM Customers WHERE Email = 'jane.smith@example.com')
 
 IF NOT EXISTS (SELECT 1 FROM StaffUsers WHERE Email = 'analyst@bank.com')
     INSERT INTO StaffUsers (Username, FullName, Email, RoleID, PasswordHash)
-    VALUES ('bank_analyst', 'Sarah Connor', 'analyst@bank.com', 1, 'AQAAAAIAAYagAAAAE...');
+    VALUES ('bank_analyst', 'admin', 'admin', 1, 'admin');
 
 -- 4.3. Accounts Seeding
 IF NOT EXISTS (SELECT 1 FROM Accounts WHERE AccountNumber = 'ACC-987654321')
