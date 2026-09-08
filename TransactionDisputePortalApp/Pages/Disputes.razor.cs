@@ -72,5 +72,14 @@ namespace TransactionDisputePortal.Client.Pages
         {
             selectedDispute = null;
         }
+
+        private string GetStatusBadgeClass(int statusId) => statusId switch
+        {
+            1 => "bg-warning text-dark", // Submitted
+            2 => "bg-info text-dark",    // Under Review
+            3 => "bg-success",          // Approved
+            4 => "bg-danger",           // Rejected
+            _ => "bg-secondary"
+        };
     }
 }

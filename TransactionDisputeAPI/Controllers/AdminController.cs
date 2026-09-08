@@ -21,7 +21,7 @@ namespace TransactionDisputePortal.API.Controllers
         /// Gets All Disputes for Admin
         /// </summary>
         [HttpPost("GetDisputes")]
-        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(AdminDisputesResponseDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetDisputesForAdmin([FromBody] AdminDisputesRequestDTO request)
         {

@@ -71,7 +71,9 @@
                                     <td class="fw-bold">@item.DisputedAmount.ToString("C")</td>
                                     <td>@(item.CreatedDate != default ? item.CreatedDate.ToString("yyyy-MM-dd") : "N/A")</td>
                                     <td>
-                                        <StatusBadge StatusId="@item.DisputeStatusID" StatusName="@item.DisputeStatus" />
+                                        <span class="badge @GetStatusBadgeClass(item.DisputeStatusID)">
+                                            @(string.IsNullOrWhiteSpace(item.DisputeStatus) ? $"Status #{item.DisputeStatusID}" : item.DisputeStatus)
+                                        </span>
                                     </td>
                                     <td class="text-end">
                                         <button class="btn btn-outline-primary btn-sm" @onclick="() => OpenReviewModal(item)">
