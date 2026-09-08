@@ -14,8 +14,8 @@ namespace TransactionDisputePortal.Shared.Models.DTO
         public string ReasonCategory { get; set; } = string.Empty;
         public int DisputeStatusID { get; set; }
         public string DisputeStatus { get; set; } = string.Empty;
-        public DateTime CreatedDateCreatedAt { get; set; }
-        public DateTime? LastUpdatedDate { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public DateTime? UpdatedDate { get; set; }
         public int TotalRecords { get; set; }
     }
 }

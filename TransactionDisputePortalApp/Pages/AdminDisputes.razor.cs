@@ -9,12 +9,15 @@ namespace TransactionDisputePortal.Client.Pages
         private List<AdminDisputesResponseDTO> disputes = new();
         private bool isLoading = true;
 
+        // Pagination & Filter State
         private int currentPageNumber = 1;
         private int pageSize = 10;
-        private int selectedStatusId = 0; // 0 = All Statuses
+        private int? selectedStatusId = 0;
         private string? searchTerm = null;
         private int totalRecords = 0;
         private int totalPages => (int)Math.Ceiling((double)totalRecords / pageSize);
+
+        // Modal State
         private bool isModalOpen = false;
         private bool isSaving = false;
         private AdminDisputesResponseDTO? selectedDispute;
@@ -29,7 +32,7 @@ namespace TransactionDisputePortal.Client.Pages
                 var isStaff = await Auth.IsStaffAsync();
                 if (!isStaff)
                 {
-                    Navigation.NavigateTo(""); 
+                    Navigation.NavigateTo("/", replace: true);
                     return;
                 }
 
@@ -49,10 +52,11 @@ namespace TransactionDisputePortal.Client.Pages
                 searchTerm = searchTerm
             };
 
-            var httpResponse = await Http.PostAsJsonAsync("api/Admin/Disputes", request);
-            if (httpResponse.IsSuccessStatusCode)
+            var response = await Http.PostAsJsonAsync("api/Admin/GetDisputes", request);
+
+            if (response.IsSuccessStatusCode)
             {
-                disputes = await httpResponse.Content.ReadFromJsonAsync<List<AdminDisputesResponseDTO>>() ?? new();
+                disputes = await response.Content.ReadFromJsonAsync<List<AdminDisputesResponseDTO>>() ?? new();
                 totalRecords = disputes.FirstOrDefault()?.TotalRecords ?? 0;
             }
 
@@ -65,7 +69,7 @@ namespace TransactionDisputePortal.Client.Pages
             if (int.TryParse(e.Value?.ToString(), out var statusId))
             {
                 selectedStatusId = statusId;
-                currentPageNumber = 1; 
+                currentPageNumber = 1;
                 await LoadAllDisputesAsync();
             }
         }
@@ -103,19 +107,21 @@ namespace TransactionDisputePortal.Client.Pages
             isSaving = true;
             modalErrorMessage = null;
 
-            var request = new UpdateDisputeStatusDTO
-            {
-                DisputeID = selectedDispute.DisputeID,
-                NewStatusID = selectedNewStatusId,
-                AdminNotes = adminNotes
-            };
+            var staffId = await Auth.GetUserIDAsync();
 
-            var response = await Http.PutAsJsonAsync("api/Admin/UpdateDisputeStatus", request);
+            var request = new UpdateDisputeStatusRequestDto(
+                selectedDispute.DisputeID,
+                selectedNewStatusId,
+                staffId,
+                adminNotes
+            );
+
+            var response = await Http.PostAsJsonAsync("api/Transactions/UpdateDisputeStatus", request);
 
             if (response.IsSuccessStatusCode)
             {
                 isModalOpen = false;
-                await LoadAllDisputesAsync(); 
+                await LoadAllDisputesAsync();
             }
             else
             {
@@ -129,4 +135,4 @@ namespace TransactionDisputePortal.Client.Pages
             StateHasChanged();
         }
     }
-}
+    }

@@ -26,7 +26,7 @@ public class TransactionsController : ControllerBase
     /// <summary>
     /// Retrieves historical transactions for an account within a given date range.
     /// </summary>
-    [HttpPost]
+    [HttpPost("GetTransactions")]
     [ProducesResponseType(typeof(IEnumerable<TransactionResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IEnumerable<TransactionResponseDto>>> GetTransactions(
@@ -138,23 +138,11 @@ public class TransactionsController : ControllerBase
                 return BadRequest("Invalid dispute ID or status ID.");
             }
 
-            bool isUpdated = await _transactionRepository.UpdateDisputeStatus(request.DisputeID, request.NewStatusID);
+            bool isUpdated = await _transactionRepository.UpdateDisputeStatus(request);
             if (!isUpdated)
             {
                 return NotFound($"Dispute with ID {request.DisputeID} not found.");
             }
-
-            var auditLogRequest = new InsertAuditLogRequestDto
-            {
-                DisputeID = request.DisputeID,
-                PreviousStatusID = request.PreviousStatusID,
-                NewStatusID = request.NewStatusID,
-                ChangedByStaffID = request.ChangedByStaffID,
-                ChangedByCustomerID = request.ChangedByCustomerID,
-                Notes = request.Notes
-            };
-
-            await _auditRepository.InsertAuditLog(auditLogRequest);
 
             return Ok(request.DisputeID);
         }

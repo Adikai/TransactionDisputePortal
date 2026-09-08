@@ -81,15 +81,27 @@ namespace TransactionDisputePortal.Infrastructure.Repositories
             return accountNumbers.ToList();
         }
 
-        public async Task<IEnumerable<AdminDisputesResponseDTO>> GetDisputesForAdminAsync(int pageNumber, int pageSize, int disputeStatusID, string searchTerm)
+        public async Task<IEnumerable<AdminDisputesResponseDTO>> GetDisputesForAdminAsync(
+            int pageNumber,
+            int pageSize,
+            int? disputeStatusID,
+            string? searchTerm)
         {
-            var param = new { PageNumber = pageNumber, PageSize = pageSize, DisputeStatusID = disputeStatusID, SearchTerm = searchTerm };
-            var disputesTask = _sqlExecuter.QueryAsync<AdminDisputesResponseDTO>(
-                "dbo.GetDisputesForAdmin", param, commandType: CommandType.StoredProcedure);
-            
-            var disputes = (await disputesTask).ToList();
+            var param = new
+            {
+                PageNumber = pageNumber < 1 ? 1 : pageNumber,
+                PageSize = pageSize < 1 ? 20 : pageSize,
+                DisputeStatusID = (disputeStatusID.HasValue && disputeStatusID.Value > 0) ? disputeStatusID.Value : (int?)null,
+                SearchTerm = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm.Trim()
+            };
 
-            return disputes;
+            var disputes = await _sqlExecuter.QueryAsync<AdminDisputesResponseDTO>(
+                "[dbo].[GetAllDisputes]",
+                param,
+                commandType: CommandType.StoredProcedure
+            );
+
+            return disputes ?? Enumerable.Empty<AdminDisputesResponseDTO>();
         }
     }
 }

@@ -125,22 +125,65 @@ GO
 --DateCreated: 2026-09-01
 --Description:  Updates the status of a given dispute
 --==============================================================================
-CREATE OR ALTER PROCEDURE dbo.UpdateDisputeStatus
-@DisputeID INT,
-@NewStatusID INT
+CREATE OR ALTER PROCEDURE [dbo].[UpdateDisputeStatus]
+    @DisputeID INT,
+    @NewStatusID INT,
+    @ChangedByStaffID INT = NULL,
+    @Notes NVARCHAR(1000) = NULL
 AS
 BEGIN
-    SET NOCOUNT ON;
+        SET NOCOUNT OFF;
 
-    UPDATE dbo.Disputes
-    SET DisputeStatusID = @NewStatusID,
-    UpdatedAt = SYSDATETIMEOFFSET()
-    WHERE DisputeID = @DisputeID
-    AND DisputeStatusID <> @NewStatusID;
+    BEGIN TRY 
+        BEGIN TRANSACTION;
 
-    SELECT @@ROWCOUNT AS RowsAffected;
+        DECLARE @PreviousStatusID INT;
 
-END
+        SELECT @PreviousStatusID = DisputeStatusID 
+        FROM dbo.Disputes WITH (UPDLOCK, HOLDLOCK)
+        WHERE DisputeID = @DisputeID;
+
+        IF @PreviousStatusID IS NULL
+        BEGIN
+            RAISERROR('Dispute not found.', 16, 1);
+        END
+
+        UPDATE dbo.Disputes
+        SET DisputeStatusID = @NewStatusID,
+            UpdatedAt = SYSDATETIMEOFFSET()
+        WHERE DisputeID = @DisputeID;
+
+
+        INSERT INTO dbo.DisputeAuditLogs (
+            DisputeID,
+            PreviousStatusID,
+            NewStatusID,
+            ChangedByStaffID,
+            Notes,
+            Timestamp
+        )
+        VALUES (
+            @DisputeID,
+            @PreviousStatusID,
+            @NewStatusID,
+            NULLIF(@ChangedByStaffID, 0),
+            @Notes,
+            SYSDATETIMEOFFSET()
+        );
+
+        COMMIT TRANSACTION;
+    END TRY 
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+        DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
+        DECLARE @ErrorState INT = ERROR_STATE();
+
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+    END CATCH;
+END;
 GO
 --==============================================================================
 --Author:  Adhil Sewrathan
@@ -376,11 +419,6 @@ BEGIN
     ORDER BY d.CreatedAt DESC;
 END;
 GO
---==============================================================================
---Author:      Adhil Sewrathan
---DateCreated: 2026-09-08
---Description: Gets paginated disputes with optional filtering for Admin Portal
---==============================================================================
 CREATE OR ALTER PROCEDURE [dbo].[GetAllDisputes]
     @PageNumber INT = 1,
     @PageSize INT = 20,
@@ -391,9 +429,11 @@ BEGIN
     SET NOCOUNT ON;
     SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 
-    -- Guard clauses for pagination parameters
+
     IF @PageNumber < 1 SET @PageNumber = 1;
     IF @PageSize < 1 OR @PageSize > 100 SET @PageSize = 20;
+
+    SET @SearchTerm = NULLIF(TRIM(@SearchTerm), '');
 
     SELECT 
         d.DisputeID,
@@ -404,18 +444,19 @@ BEGIN
         d.ReasonCategory,
         d.DisputeStatusID,
         ds.StatusName AS DisputeStatus,
-        d.CreatedAt AS CreatedDateCreatedAt,
-        d.UpdatedAt AS LastUpdatedDate,
+        d.CreatedAt AS CreatedDate,
+        d.UpdatedAt AS UpdatedDate, 
         COUNT(1) OVER() AS TotalRecords
-    FROM dbo.Disputes d WITH(NOLOCK)
-    INNER JOIN dbo.Transactions t WITH(NOLOCK) ON d.TransactionID = t.TransactionID
-    INNER JOIN dbo.DisputeStatuses ds WITH(NOLOCK) ON d.DisputeStatusID = ds.disputeStatusID
-    WHERE (@DisputeStatusID IS NULL OR d.DisputeStatusID = @DisputeStatusID)
-      AND (
+    FROM dbo.Disputes d WITH (NOLOCK)
+    INNER JOIN dbo.Transactions t WITH (NOLOCK) ON d.TransactionID = t.TransactionID
+    INNER JOIN dbo.DisputeStatuses ds WITH (NOLOCK) ON d.DisputeStatusID = ds.DisputeStatusID
+    WHERE 
+        (@DisputeStatusID IS NULL OR @DisputeStatusID = 0 OR d.DisputeStatusID = @DisputeStatusID)
+        AND (
             @SearchTerm IS NULL 
             OR t.ReferenceNumber LIKE '%' + @SearchTerm + '%' 
             OR t.MerchantName LIKE '%' + @SearchTerm + '%'
-          )
+        )
     ORDER BY d.CreatedAt DESC
     OFFSET (@PageNumber - 1) * @PageSize ROWS
     FETCH NEXT @PageSize ROWS ONLY;

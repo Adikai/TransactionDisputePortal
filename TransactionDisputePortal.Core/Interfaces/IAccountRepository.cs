@@ -11,7 +11,7 @@ namespace TransactionDisputePortal.Core.Interfaces
         Task<LoginResponseDto> loginCustomer(LoginRequestDto loginRequest);
         Task<CustomerDashboardResponseDto> GetCustomerDashboardAsync(int customerId);
         Task<List<AccountSummaryDto>> GetAccountNumbersByCustomerID(int customerID);
-        Task<IEnumerable<AdminDisputesResponseDTO>> GetDisputesForAdminAsync(int pageNumber, int pageSize, int disputeStatusID, string searchTerm)
+        Task<IEnumerable<AdminDisputesResponseDTO>> GetDisputesForAdminAsync(int pageNumber, int pageSize, int? disputeStatusID, string searchTerm);
 
 
     }

@@ -8,7 +8,7 @@ namespace TransactionDisputePortal.Shared.Models.DTO
     {
         public int pageNumber { get; set; }
         public int pageSize { get; set; }
-        public int disputeStatusID { get; set; }
+        public int? disputeStatusID { get; set; }
         public string? searchTerm { get; set; } = null;
     }
 }

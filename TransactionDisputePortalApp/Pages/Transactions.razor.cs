@@ -75,7 +75,7 @@ namespace TransactionDisputePortal.Client.Pages
 
             try
             {
-                var response = await Http.PostAsJsonAsync("api/Transactions", filterModel);
+                var response = await Http.PostAsJsonAsync("api/Transactions/GetTransactions", filterModel);
 
                 if (response.IsSuccessStatusCode)
                 {

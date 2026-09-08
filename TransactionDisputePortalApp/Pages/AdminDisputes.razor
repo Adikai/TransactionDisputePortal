@@ -31,7 +31,7 @@
     </div>
 
     <!-- Disputes Table -->
-    <div class="card border-0 shadow-sm">
+    <div class="card border-0 shadow-sm mb-4">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
@@ -39,7 +39,6 @@
                         <tr>
                             <th>Dispute ID</th>
                             <th>Reference</th>
-                            <th>Account</th>
                             <th>Amount</th>
                             <th>Created Date</th>
                             <th>Status</th>
@@ -50,7 +49,7 @@
                         @if (isLoading)
                         {
                             <tr>
-                                <td colspan="7" class="text-center py-4">
+                                <td colspan="6" class="text-center py-4">
                                     <div class="spinner-border spinner-border-sm text-primary me-2"></div>
                                     Loading disputes...
                                 </td>
@@ -59,7 +58,7 @@
                         else if (disputes == null || !disputes.Any())
                         {
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">No disputes found.</td>
+                                <td colspan="6" class="text-center text-muted py-4">No disputes found.</td>
                             </tr>
                         }
                         else
@@ -69,9 +68,8 @@
                                 <tr>
                                     <td class="fw-semibold">#@item.DisputeID</td>
                                     <td>@item.ReferenceNumber</td>
-                                    <td>@item.AccountNumber</td>
                                     <td class="fw-bold">@item.DisputedAmount.ToString("C")</td>
-                                    <td>@item.CreatedDate.ToString("yyyy-MM-dd")</td>
+                                    <td>@(item.CreatedDate != default ? item.CreatedDate.ToString("yyyy-MM-dd") : "N/A")</td>
                                     <td>
                                         <StatusBadge StatusId="@item.DisputeStatusID" StatusName="@item.DisputeStatus" />
                                     </td>
@@ -87,5 +85,108 @@
                 </table>
             </div>
         </div>
+
+        <!-- Pagination Footer -->
+        @if (totalPages > 1)
+        {
+            <div class="card-footer bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                <div class="text-muted small">
+                    Showing @(((currentPageNumber - 1) * pageSize) + 1) to @(Math.Min(currentPageNumber * pageSize, totalRecords)) of @totalRecords entries
+                </div>
+                <ul class="pagination pagination-sm m-0">
+                    <li class="page-item @(currentPageNumber == 1 ? "disabled" : "")">
+                        <button class="page-link" @onclick="() => ChangePageAsync(currentPageNumber - 1)">Previous</button>
+                    </li>
+
+                    @for (int i = 1; i <= totalPages; i++)
+                    {
+                        var pageNum = i;
+                        <li class="page-item @(currentPageNumber == pageNum ? "active" : "")">
+                            <button class="page-link" @onclick="() => ChangePageAsync(pageNum)">@pageNum</button>
+                        </li>
+                    }
+
+                    <li class="page-item @(currentPageNumber == totalPages ? "disabled" : "")">
+                        <button class="page-link" @onclick="() => ChangePageAsync(currentPageNumber + 1)">Next</button>
+                    </li>
+                </ul>
+            </div>
+        }
     </div>
 </div>
+
+<!-- Review & Status Update Modal -->
+@if (isModalOpen && selectedDispute != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title mb-0 fw-bold">Review Dispute #@selectedDispute.DisputeID</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(modalErrorMessage))
+                    {
+                        <div class="alert alert-danger py-2 small">@modalErrorMessage</div>
+                    }
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-muted mb-0">Reference</label>
+                            <div class="fw-bold">@selectedDispute.ReferenceNumber</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-muted mb-0">Merchant</label>
+                            <div>@selectedDispute.MerchantName</div>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-muted mb-0">Reason</label>
+                            <div>@selectedDispute.ReasonCategory</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-muted mb-0">Disputed Amount</label>
+                            <div class="text-danger fw-bold fs-5">@selectedDispute.DisputedAmount.ToString("C")</div>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">New Dispute Status</label>
+                        <select class="form-select" @bind="selectedNewStatusId">
+                            <option value="1">Submitted</option>
+                            <option value="2">Under Review</option>
+                            <option value="3">Approved</option>
+                            <option value="4">Rejected</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Resolution Notes</label>
+                        <textarea class="form-control" rows="3" placeholder="Add investigation notes or update reasoning..." @bind="adminNotes"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" @onclick="CloseModal" disabled="@isSaving">Cancel</button>
+                    <button type="button" class="btn btn-primary btn-sm" @onclick="SaveStatusUpdateAsync" disabled="@isSaving">
+                        @if (isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                            <span>Saving...</span>
+                        }
+                        else
+                        {
+                            <span>Save Changes</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}

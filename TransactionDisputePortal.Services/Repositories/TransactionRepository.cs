@@ -32,11 +32,17 @@ public class TransactionRepository : ITransactionRepository
         );
     }
 
-    public async Task<bool> UpdateDisputeStatus(int disputeID, int newStatusID)
+    public async Task<bool> UpdateDisputeStatus(UpdateDisputeStatusRequestDto request)
     {
         int rowsAffected = await _sqlExecuter.ExecuteAsync(
             "[dbo].[UpdateDisputeStatus]",
-            new { DisputeID = disputeID, NewStatusID = newStatusID },
+            new
+            {
+                DisputeID = request.DisputeID,
+                NewStatusID = request.NewStatusID,
+                ChangedByStaffID = request.StaffID,
+                Notes = request.AdminNotes
+            },
             commandType: CommandType.StoredProcedure
         );
 

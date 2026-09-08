@@ -13,7 +13,7 @@ namespace TransactionDisputePortal.Core.Interfaces
             DateTimeOffset endDate,
             CancellationToken cancellationToken = default);
 
-        Task<bool> UpdateDisputeStatus(int disputeID, int newStatusID);
+        Task<bool> UpdateDisputeStatus(UpdateDisputeStatusRequestDto request);
         Task<int> CreateDispute(CreateDisputeRequestDTO request);
         Task<TransactionResponseDto?> GetTransactionByID(long transactionID, CancellationToken cancellationToken = default);
         Task<IEnumerable<DisputeResponseDto>> GetAllDisputesByCustomerID(int customerID, CancellationToken cancellationToken = default);
