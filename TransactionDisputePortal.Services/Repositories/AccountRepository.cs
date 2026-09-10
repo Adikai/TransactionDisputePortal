@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Dapper;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
@@ -102,6 +103,55 @@ namespace TransactionDisputePortal.Infrastructure.Repositories
             );
 
             return disputes ?? Enumerable.Empty<AdminDisputesResponseDTO>();
+        }
+
+        public async Task<int> CreateCustomerAsync(CreateCustomerDto request)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("FirstName", request.FirstName);
+            parameters.Add("LastName", request.LastName);
+            parameters.Add("Email", request.Email);
+            parameters.Add("PhoneNumber", request.PhoneNumber);
+            parameters.Add("PasswordHash", request.PasswordHash);
+            parameters.Add("NewCustomerID", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+            await _sqlExecuter.ExecuteAsync(
+                "[dbo].[sp_CreateCustomer]",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            return parameters.Get<int>("NewCustomerID");
+        }
+
+        public async Task UpdateCustomerAsync(UpdateCustomerDto request)
+        {
+            var param = new
+            {
+                CustomerID = request.CustomerID,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Email = request.Email,
+                PhoneNumber = request.PhoneNumber,
+                PasswordHash = string.IsNullOrWhiteSpace(request.PasswordHash) ? null : request.PasswordHash
+            };
+
+            await _sqlExecuter.ExecuteAsync(
+                "[dbo].[sp_UpdateCustomer]",
+                param,
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+        public async Task DeleteCustomerAsync(int customerId)
+        {
+            var param = new { CustomerID = customerId };
+
+            await _sqlExecuter.ExecuteAsync(
+                "[dbo].[sp_DeleteCustomer]",
+                param,
+                commandType: CommandType.StoredProcedure
+            );
         }
     }
 }

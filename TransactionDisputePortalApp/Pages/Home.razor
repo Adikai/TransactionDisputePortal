@@ -6,88 +6,99 @@
 
 @if (isLoading)
 {
-    <div class="d-flex justify-content-center align-items-center py-5 style-loader">
-        <div class="spinner-border text-primary" role="status">
+    <div class="d-flex flex-column justify-content-center align-items-center py-5 style-loader" style="min-height: 400px;">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
             <span class="visually-hidden">Loading dashboard...</span>
         </div>
+        <p class="text-muted mt-3 fw-medium">Loading your accounts and dispute activity...</p>
     </div>
 }
 else if (!string.IsNullOrEmpty(errorMessage))
 {
-    <div class="alert alert-danger d-flex align-items-center justify-content-between my-4" role="alert">
-        <div>
-            <strong>Error loading dashboard:</strong> @errorMessage
+    <div class="alert alert-danger d-flex align-items-center justify-content-between my-4 rounded-3 shadow-sm" role="alert">
+        <div class="d-flex align-items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
+            </svg>
+            <div><strong>Error loading dashboard:</strong> @errorMessage</div>
         </div>
-        <button class="btn btn-outline-danger btn-sm" @onclick="LoadDashboardDataAsync">Retry</button>
+        <button class="btn btn-outline-danger btn-sm px-3 fw-semibold rounded-2" @onclick="LoadDashboardDataAsync">Retry</button>
     </div>
 }
 else if (dashboardData != null)
 {
-    <div class="dashboard-container">
+    <div class="dashboard-container py-3">
         <!-- Header Section -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h3 class="fw-bold mb-1">Customer Dashboard</h3>
+                <h3 class="fw-bold text-dark mb-1">Customer Dashboard</h3>
                 <p class="text-muted small mb-0">Overview of your accounts and dispute activity</p>
             </div>
-            <button class="btn btn-outline-danger btn-sm px-3 fw-semibold" @onclick="HandleLogoutAsync">
-                Log Out
-            </button>
         </div>
 
         <!-- Metric Summary Cards -->
         <div class="row g-3 mb-4">
             <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card metric-card border-0 shadow-sm p-3 h-100">
+                <div class="card metric-card shadow-sm p-3 h-100">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <span class="text-muted small fw-bold text-uppercase">Overall Balance</span>
-                            <h3 class="fw-bold text-dark mb-0 mt-1">@dashboardData.Metrics.OverallBalance.ToString("C", CultureInfo.GetCultureInfo("en-ZA"))</h3>
+                            <span class="text-muted extra-small fw-bold text-uppercase tracking-wider">Overall Balance</span>
+                            <h4 class="fw-bold text-dark mb-0 mt-1">@dashboardData.Metrics.OverallBalance.ToString("C", CultureInfo.GetCultureInfo("en-ZA"))</h4>
                         </div>
-                        <div class="metric-icon bg-primary-subtle text-primary rounded-circle">
-                            💳
+                        <div class="metric-icon-box bg-primary-subtle text-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v1h14V4a1 1 0 0 0-1-1H2zm13 4H1v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7z" />
+                                <path d="M2 10a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-1z" />
+                            </svg>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card metric-card border-0 shadow-sm p-3 h-100">
+                <div class="card metric-card shadow-sm p-3 h-100">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <span class="text-muted small fw-bold text-uppercase">Total Accounts</span>
-                            <h3 class="fw-bold text-dark mb-0 mt-1">@dashboardData.Metrics.TotalAccountsCount</h3>
+                            <span class="text-muted extra-small fw-bold text-uppercase tracking-wider">Total Accounts</span>
+                            <h4 class="fw-bold text-dark mb-0 mt-1">@dashboardData.Metrics.TotalAccountsCount</h4>
                         </div>
-                        <div class="metric-icon bg-info-subtle text-info rounded-circle">
-                            🏦
+                        <div class="metric-icon-box bg-info-subtle text-info">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M8 .95 14.61 4h.89a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5H15v7h1a.5.5 0 0 1 0 1H0a.5.5 0 0 1 0-1h1V7H.5a.5.5 0 0 1-.5-.5v-2A.5.5 0 0 1 .5 4h.89L8 .95zM3.5 7d-.276 0-.5.224-.5.5v7c0 .276.224.5.5.5h1c.276 0 .5-.224.5-.5v-7c0-.276-.224-.5-.5-.5h-1zm4 0d-.276 0-.5.224-.5.5v7c0 .276.224.5.5.5h1c.276 0 .5-.224.5-.5v-7c0-.276-.224-.5-.5-.5h-1zm4 0d-.276 0-.5.224-.5.5v7c0 .276.224.5.5.5h1c.276 0 .5-.224.5-.5v-7c0-.276-.224-.5-.5-.5h-1z" />
+                            </svg>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card metric-card border-0 shadow-sm p-3 h-100">
+                <div class="card metric-card shadow-sm p-3 h-100">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <span class="text-muted small fw-bold text-uppercase">Active Disputes</span>
-                            <h3 class="fw-bold text-warning mb-0 mt-1">@dashboardData.Metrics.OverallActiveDisputeCount</h3>
+                            <span class="text-muted extra-small fw-bold text-uppercase tracking-wider">Active Disputes</span>
+                            <h4 class="fw-bold text-warning mb-0 mt-1">@dashboardData.Metrics.OverallActiveDisputeCount</h4>
                         </div>
-                        <div class="metric-icon bg-warning-subtle text-warning rounded-circle">
-                            ⚠️
+                        <div class="metric-icon-box bg-warning-subtle text-warning">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
+                            </svg>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card metric-card border-0 shadow-sm p-3 h-100">
+                <div class="card metric-card shadow-sm p-3 h-100">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <span class="text-muted small fw-bold text-uppercase">Disputed Amount</span>
-                            <h3 class="fw-bold text-danger mb-0 mt-1">@dashboardData.Metrics.OverallDisputedAmount.ToString("C", CultureInfo.GetCultureInfo("en-ZA"))</h3>
+                            <span class="text-muted extra-small fw-bold text-uppercase tracking-wider">Disputed Amount</span>
+                            <h4 class="fw-bold text-danger mb-0 mt-1">@dashboardData.Metrics.OverallDisputedAmount.ToString("C", CultureInfo.GetCultureInfo("en-ZA"))</h4>
                         </div>
-                        <div class="metric-icon bg-danger-subtle text-danger rounded-circle">
-                            💸
+                        <div class="metric-icon-box bg-danger-subtle text-danger">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M4 10.781c.148.067.301.125.457.175v-2.001a6.38 6.38 0 0 0-.457-.175V10.781zm1.5.39a8.1 8.1 0 0 0 1 .19v-2.735a8.1 8.1 0 0 0-1 .19v2.355zm2.5.21v-2.793a8.1 8.1 0 0 0-1-.19v2.983c.338.01.673-.008 1-.02zm1.5-.21a8.1 8.1 0 0 0 1-.19v-2.355a8.1 8.1 0 0 0-1-.19v2.735zm1.5-.39v-2.001c-.156.05-.309.108-.457.175v1.651c.148-.067.301-.125.457-.175z" />
+                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                            </svg>
                         </div>
                     </div>
                 </div>
@@ -95,29 +106,43 @@ else if (dashboardData != null)
         </div>
 
         <!-- Accounts Grid -->
-        <h5 class="fw-bold mb-3">Your Accounts</h5>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold text-dark mb-0">Your Accounts</h5>
+            <span class="text-muted small">Click any card to filter dashboard focus</span>
+        </div>
+
         <div class="row g-3 mb-4">
             @foreach (var account in dashboardData.Accounts)
             {
+                var isSelected = selectedAccountId == account.AccountId;
                 <div class="col-12 col-md-6 col-lg-4">
-                    <div class="card account-card border-0 shadow-sm p-3 h-100 @(selectedAccountId == account.AccountId ? "active-account border border-primary border-2" : "")">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div>
-                                <span class="badge bg-secondary mb-1">@account.AccountType</span>
-                                <h6 class="fw-bold text-dark mb-0">@account.AccountNumber</h6>
-                            </div>
-                            <button class="btn btn-sm @(selectedAccountId == account.AccountId ? "btn-primary" : "btn-outline-primary")"
-                                    @onclick="() => SelectAccount(account.AccountId)">
-                                @(selectedAccountId == account.AccountId ? "Selected" : "Select")
-                            </button>
+                    <div class="card account-card shadow-sm p-3 h-100 @(isSelected ? "active-account" : "")"
+                         @onclick="() => SelectAccount(account.AccountId)">
+
+                        <!-- Header: Account Type & Passive Selection Indicator -->
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-secondary text-white fw-semibold px-2 py-1">@account.AccountType</span>
+                            <span class="selection-badge @(isSelected ? "selected" : "unselected")">
+                                @(isSelected ? "Selected" : "Select")
+                            </span>
                         </div>
-                        <div class="mt-2">
-                            <span class="text-muted small">Available Balance</span>
+
+                        <!-- Account Number -->
+                        <div class="mb-3">
+                            <span class="text-muted extra-small d-block text-uppercase fw-semibold">Account Number</span>
+                            <strong class="fs-6 text-dark font-monospace">@account.AccountNumber</strong>
+                        </div>
+
+                        <!-- Available Balance -->
+                        <div>
+                            <span class="text-muted extra-small d-block">Available Balance</span>
                             <h5 class="fw-bold text-success mb-0">@account.Balance.ToString("C", CultureInfo.GetCultureInfo("en-ZA"))</h5>
                         </div>
+
+                        <!-- Active Disputes Footer -->
                         @if (account.ActiveDisputeCount > 0)
                         {
-                            <div class="mt-3 pt-2 border-top small text-danger d-flex justify-content-between">
+                            <div class="mt-3 pt-2 border-top extra-small text-danger d-flex justify-content-between align-items-center">
                                 <span>⚠️ Active Disputes: <strong>@account.ActiveDisputeCount</strong></span>
                                 <strong>@account.TotalDisputedAmount.ToString("C", CultureInfo.GetCultureInfo("en-ZA"))</strong>
                             </div>
@@ -131,12 +156,12 @@ else if (dashboardData != null)
         <div class="row g-4">
             <!-- Recent Disputes Table -->
             <div class="col-lg-8">
-                <div class="card border-0 shadow-sm p-4 h-100">
+                <div class="card dashboard-panel border-0 shadow-sm p-4 h-100">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="fw-bold mb-0">Recent Disputes</h5>
-                        <button class="btn btn-link btn-sm text-decoration-none fw-semibold p-0"
+                        <h5 class="fw-bold text-dark mb-0">Recent Disputes</h5>
+                        <button class="btn btn-link btn-sm text-decoration-none fw-semibold p-0 text-primary"
                                 @onclick='() => Navigation.NavigateTo("/disputes")'>
-                            View All Disputes
+                            View All Disputes →
                         </button>
                     </div>
 
@@ -145,27 +170,27 @@ else if (dashboardData != null)
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light">
-                                    <tr class="small text-uppercase text-muted">
+                                    <tr class="extra-small text-uppercase text-muted">
                                         <th>Ref Number</th>
                                         <th>Reason</th>
                                         <th>Amount</th>
-                                        <th>Status</th>
-                                        <th>Date</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-end">Date</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var dispute in dashboardData.RecentDisputes)
                                     {
                                         <tr>
-                                            <td class="fw-semibold">@dispute.ReferenceNumber</td>
+                                            <td class="fw-semibold font-monospace">@dispute.ReferenceNumber</td>
                                             <td>@dispute.ReasonCategory</td>
                                             <td class="fw-bold">@dispute.DisputedAmount.ToString("C", CultureInfo.GetCultureInfo("en-ZA"))</td>
-                                            <td>
-                                                <span class="badge @GetStatusBadgeClass(dispute.StatusName) px-2 py-1">
+                                            <td class="text-center">
+                                                <span class="badge @GetStatusBadgeClass(dispute.StatusName) px-2.5 py-1">
                                                     @dispute.StatusName
                                                 </span>
                                             </td>
-                                            <td class="text-muted small">@dispute.CreatedAt.ToString("yyyy-MM-dd")</td>
+                                            <td class="text-muted small text-end">@dispute.CreatedAt.ToString("yyyy-MM-dd")</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -174,7 +199,7 @@ else if (dashboardData != null)
                     }
                     else
                     {
-                        <div class="text-center py-4 text-muted">
+                        <div class="text-center py-5 text-muted">
                             <p class="mb-0">No recent disputes found across your accounts.</p>
                         </div>
                     }
@@ -183,15 +208,15 @@ else if (dashboardData != null)
 
             <!-- Quick Actions Panel -->
             <div class="col-lg-4">
-                <div class="card border-0 shadow-sm p-4 h-100 d-flex flex-column justify-content-between">
+                <div class="card dashboard-panel border-0 shadow-sm p-4 h-100 d-flex flex-column justify-content-between">
                     <div>
-                        <h5 class="fw-bold mb-3">Quick Actions</h5>
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-primary py-2 fw-semibold"
+                        <h5 class="fw-bold text-dark mb-3">Quick Actions</h5>
+                        <div class="d-grid gap-2.5">
+                            <button class="btn btn-primary btn-quick-action py-2.5 fw-semibold shadow-sm"
                                     @onclick="NavigateToTransactions">
                                 Search Transactions
                             </button>
-                            <button class="btn btn-outline-secondary py-2 fw-semibold"
+                            <button class="btn btn-outline-secondary btn-quick-action py-2.5 fw-semibold"
                                     @onclick='() => Navigation.NavigateTo("/disputes")'>
                                 Track Active Disputes
                             </button>
@@ -200,13 +225,15 @@ else if (dashboardData != null)
 
                     @if (SelectedAccount != null)
                     {
-                        <div class="account-card-badge p-3 rounded-3 bg-light mt-4 border">
-                            <span class="text-muted small d-block mb-1">Active Selected Account</span>
-                            <strong class="d-block text-dark fs-5">@SelectedAccount.AccountNumber</strong>
-                            <span class="text-muted small">Type: @SelectedAccount.AccountType</span>
-                            <span class="text-success small fw-semibold d-block mt-1">
-                                Balance: @SelectedAccount.Balance.ToString("C", CultureInfo.GetCultureInfo("en-ZA"))
-                            </span>
+                        <div class="account-active-badge p-3 mt-4 border">
+                            <span class="text-muted extra-small text-uppercase fw-bold d-block mb-1">Active Selected Account</span>
+                            <strong class="d-block text-dark fs-5 font-monospace">@SelectedAccount.AccountNumber</strong>
+                            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                                <span class="text-muted small">Type: <strong>@SelectedAccount.AccountType</strong></span>
+                                <span class="text-success small fw-bold">
+                                    @SelectedAccount.Balance.ToString("C", CultureInfo.GetCultureInfo("en-ZA"))
+                                </span>
+                            </div>
                         </div>
                     }
                 </div>
@@ -214,4 +241,3 @@ else if (dashboardData != null)
         </div>
     </div>
 }
-

@@ -1,0 +1,19 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Text;
+
+namespace TransactionDisputePortal.Shared.Models.DTO
+{
+    public class UpdateCustomerDto
+    {
+        public int CustomerID { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+
+        public string Email { get; set; } = string.Empty;
+
+        public string? PhoneNumber { get; set; }
+        public string? PasswordHash { get; set; }
+    }
+}

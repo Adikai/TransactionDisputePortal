@@ -223,8 +223,6 @@ BEGIN
             UpdatedAt = SYSDATETIMEOFFSET()
         WHERE DisputeID = @DisputeID;
 
-        DECLARE @RowsUpdated INT = @@ROWCOUNT;
-
         INSERT INTO dbo.DisputeAuditLogs (
             DisputeID,
             PreviousStatusID,
@@ -244,8 +242,6 @@ BEGIN
 
         COMMIT TRANSACTION;
 
-        SELECT @RowsUpdated;
-        
     END TRY 
     BEGIN CATCH
         IF @@TRANCOUNT > 0
@@ -572,5 +568,128 @@ BEGIN
         ON d.DisputeStatusID = ds.DisputeStatusID
     WHERE d.CustomerID = @CustomerID
     ORDER BY d.CreatedAt DESC;
+END;
+GO
+
+--==============================================================================
+--Author:  Adhil Sewrathan
+--DateCreated: 2026-09-10
+--Description:  Creates a customer record and returns the new CustomerID
+--==============================================================================
+CREATE OR ALTER PROCEDURE dbo.CreateCustomer
+    @FirstName NVARCHAR(100),
+    @LastName NVARCHAR(100),
+    @Email NVARCHAR(100),
+    @PhoneNumber VARCHAR(20) = NULL,
+    @PasswordHash NVARCHAR(255),
+    @NewCustomerID INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (SELECT 1 FROM dbo.Customers WHERE Email = @Email)
+    BEGIN
+        RAISERROR('A customer with the email address "%s" already exists.', 16, 1, @Email);
+        RETURN;
+    END
+
+    INSERT INTO dbo.Customers (FirstName, LastName, Email, PhoneNumber, PasswordHash)
+    VALUES (@FirstName, @LastName, @Email, @PhoneNumber, @PasswordHash);
+
+    SET @NewCustomerID = SCOPE_IDENTITY();
+END;
+GO
+
+--==============================================================================
+--Author:  Adhil Sewrathan
+--DateCreated: 2026-09-10
+--Description:  Updates a customer record
+--==============================================================================
+CREATE OR ALTER PROCEDURE dbo.UpdateCustomer
+    @CustomerID INT,
+    @FirstName NVARCHAR(100),
+    @LastName NVARCHAR(100),
+    @Email NVARCHAR(100),
+    @PhoneNumber VARCHAR(20) = NULL,
+    @PasswordHash NVARCHAR(255) = NUL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+ 
+    IF NOT EXISTS (SELECT 1 FROM dbo.Customers WHERE CustomerID = @CustomerID)
+    BEGIN
+        RAISERROR('Customer with ID %d was not found.', 16, 1, @CustomerID);
+        RETURN;
+    END
+
+
+    IF EXISTS (SELECT 1 FROM dbo.Customers WHERE Email = @Email AND CustomerID <> @CustomerID)
+    BEGIN
+        RAISERROR('The email address "%s" is already assigned to another customer.', 16, 1, @Email);
+        RETURN;
+    END
+
+    UPDATE dbo.Customers
+    SET FirstName = @FirstName,
+        LastName = @LastName,
+        Email = @Email,
+        PhoneNumber = @PhoneNumber,
+        PasswordHash = COALESCE(@PasswordHash, PasswordHash)
+    WHERE CustomerID = @CustomerID;
+END;
+GO
+
+--==============================================================================
+--Author:  Adhil Sewrathan
+--DateCreated: 2026-09-10
+--Description:  Deletes a customer record and all associated data (accounts, transactions, disputes, and audit logs)
+--==============================================================================
+CREATE OR ALTER PROCEDURE dbo.DeleteCustomer
+    @CustomerID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM dbo.Customers WHERE CustomerID = @CustomerID)
+    BEGIN
+        RAISERROR('Customer with ID %d was not found.', 16, 1, @CustomerID);
+        RETURN;
+    END
+
+    BEGIN TRANSACTION;
+    BEGIN TRY
+
+        DELETE FROM dbo.DisputeAuditLogs
+        WHERE ChangedByCustomerID = @CustomerID
+           OR DisputeID IN (SELECT DisputeID FROM dbo.Disputes WHERE CustomerID = @CustomerID);
+
+
+        DELETE FROM dbo.Disputes
+        WHERE CustomerID = @CustomerID;
+
+        DELETE FROM dbo.AccountBalanceAuditLogs
+        WHERE AccountID IN (SELECT AccountID FROM dbo.Accounts WHERE CustomerID = @CustomerID);
+
+
+        DELETE FROM dbo.Transactions
+        WHERE AccountID IN (SELECT AccountID FROM dbo.Accounts WHERE CustomerID = @CustomerID);
+
+
+        DELETE FROM dbo.Accounts
+        WHERE CustomerID = @CustomerID;
+
+
+        DELETE FROM dbo.Customers
+        WHERE CustomerID = @CustomerID;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH
 END;
 GO

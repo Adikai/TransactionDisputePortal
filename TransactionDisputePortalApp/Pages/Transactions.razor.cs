@@ -155,6 +155,12 @@ namespace TransactionDisputePortal.Client.Pages
             }
         }
 
+        private async Task SelectAccount(string accountNumber)
+        {
+            filterModel.AccountNumber = accountNumber;
+            await FetchTransactionsAsync();
+        }
+
         private string GetTransactionStatusBadge(string? status) => status switch
         {
             "Posted" => "bg-success-subtle text-success border border-success-subtle",

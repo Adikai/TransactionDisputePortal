@@ -5,6 +5,40 @@
 
 <PageTitle>Transactions - Transaction Dispute Portal</PageTitle>
 
+<style>
+    .account-card {
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        user-select: none;
+        border: 2px solid transparent;
+    }
+
+        .account-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
+        }
+
+        .account-card:active {
+            transform: translateY(-1px) scale(0.98);
+        }
+
+        .account-card.selected {
+            border-color: #0d6efd !important;
+            background-color: rgba(13, 110, 253, 0.05);
+        }
+
+        .account-card .check-indicator {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+</style>
+
 <div class="container-fluid px-0">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -14,19 +48,78 @@
         </div>
     </div>
 
+    <!-- Account Selection Cards -->
+    <div class="mb-4">
+        <label class="form-label fw-semibold text-muted small mb-2">Select Account</label>
+        @if (customerAccounts == null)
+        {
+            <div class="d-flex align-items-center gap-2 py-3 text-muted small">
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span>Loading accounts...</span>
+            </div>
+        }
+        else if (!customerAccounts.Any())
+        {
+            <div class="alert alert-warning mb-0">No accounts found for this profile.</div>
+        }
+        else
+        {
+            <div class="row g-3">
+                @foreach (var acc in customerAccounts)
+                {
+                    var isSelected = filterModel.AccountNumber == acc.AccountNumber;
+                    <div class="col-12 col-md-4">
+                        <div class="card account-card rounded-3 p-3 h-100 bg-white @(isSelected ? "selected" : "")"
+                             @onclick="() => SelectAccount(acc.AccountNumber)">
+
+                            <!-- Card Header: Account Type Badge & Passive Selection Status -->
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge bg-secondary text-white fw-medium px-2 py-1">
+                                    @acc.AccountType
+                                </span>
+                                <span class="badge @(isSelected ? "bg-primary text-white" : "border border-primary text-primary bg-white") px-3 py-1">
+                                    @(isSelected ? "Selected" : "Select")
+                                </span>
+                            </div>
+
+                            <!-- Account Number -->
+                            <div class="mb-3">
+                                <strong class="fs-6 text-dark">@acc.AccountNumber</strong>
+                            </div>
+
+                            <!-- Balance Details -->
+                            <div class="mb-2">
+                                <span class="text-muted extra-small d-block">Available Balance</span>
+                                <span class="fs-5 fw-bold text-success">
+                                    @acc.Balance.ToString("C", CultureInfo.GetCultureInfo("en-ZA"))
+                                </span>
+                            </div>
+
+                            <!-- Active Disputes Footer (if applicable) -->
+                            @if (acc.ActiveDisputeCount > 0)
+                            {
+                                <hr class="my-2 text-muted opacity-25" />
+                                <div class="d-flex justify-content-between align-items-center extra-small fw-semibold text-danger">
+                                    <span>⚠️ Active Disputes: @acc.ActiveDisputeCount</span>
+                                    <span>@acc.TotalDisputedAmount.ToString("C", CultureInfo.GetCultureInfo("en-ZA"))</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
     <!-- Filter Card -->
     <div class="card border-0 shadow-sm p-4 mb-4">
         <form @onsubmit="FetchTransactionsAsync" @onsubmit:preventDefault>
             <div class="row g-3 align-items-end">
-                <div class="col-12 col-md-4">
-                    <label class="form-label fw-semibold text-muted small mb-1">Account Number</label>
-                    <input type="text" @bind="filterModel.AccountNumber" class="form-control" placeholder="e.g. ACC-987654321" />
-                </div>
-                <div class="col-12 col-sm-6 col-md-3">
+                <div class="col-12 col-sm-6 col-md-5">
                     <label class="form-label fw-semibold text-muted small mb-1">Start Date</label>
                     <input type="date" @bind="filterModel.StartDate" class="form-control" />
                 </div>
-                <div class="col-12 col-sm-6 col-md-3">
+                <div class="col-12 col-sm-6 col-md-5">
                     <label class="form-label fw-semibold text-muted small mb-1">End Date</label>
                     <input type="date" @bind="filterModel.EndDate" class="form-control" />
                 </div>
@@ -45,23 +138,6 @@
                 </div>
             </div>
         </form>
-    </div>
-
-    <div class="col-12 col-md-4">
-        <label class="form-label fw-semibold text-muted small mb-1">Account Number</label>
-        <select @bind="filterModel.AccountNumber" class="form-select">
-            @if (customerAccounts == null)
-            {
-                <option value="">Loading accounts...</option>
-            }
-            else
-            {
-                @foreach (var acc in customerAccounts)
-                {
-                    <option value="@acc.AccountNumber">@acc.AccountNumber (@acc.AccountType)</option>
-                }
-            }
-        </select>
     </div>
 
     <!-- Feedback Alerts -->
@@ -105,7 +181,7 @@
         else if (transactions == null)
         {
             <div class="text-center py-5 text-muted">
-                <p class="mb-0">Enter an account number and click <strong>Search</strong> to load transaction history.</p>
+                <p class="mb-0">Select an account card above and click <strong>Search</strong> to load transaction history.</p>
             </div>
         }
         else if (!transactions.Any())

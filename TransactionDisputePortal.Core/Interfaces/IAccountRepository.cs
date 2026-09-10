@@ -12,7 +12,8 @@ namespace TransactionDisputePortal.Core.Interfaces
         Task<CustomerDashboardResponseDto> GetCustomerDashboardAsync(int customerId);
         Task<List<AccountSummaryDto>> GetAccountNumbersByCustomerID(int customerID);
         Task<IEnumerable<AdminDisputesResponseDTO>> GetDisputesForAdminAsync(int pageNumber, int pageSize, int? disputeStatusID, string searchTerm);
-
-
+        Task<int> CreateCustomerAsync(CreateCustomerDto request);
+        Task UpdateCustomerAsync(UpdateCustomerDto request);
+        Task DeleteCustomerAsync(int customerId);
     }
 }

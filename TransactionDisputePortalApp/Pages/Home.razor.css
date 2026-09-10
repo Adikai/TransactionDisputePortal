@@ -1,42 +1,113 @@
-
 .dashboard-container {
-    max-width: 1200px;
+    max-width: 1280px;
     margin: 0 auto;
+    animation: dashboardFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.style-loader {
-    min-height: 300px;
-}
-
+/* Metric Cards */
 .metric-card {
-    border-radius: 12px;
-    transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    border-radius: 1rem;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    background: #ffffff;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
     .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
+        transform: translateY(-3px);
+        box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.06) !important;
     }
 
-.metric-icon {
+.metric-icon-box {
     width: 48px;
     height: 48px;
+    border-radius: 0.75rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
 }
 
+/* Interactive Account Selection Cards */
 .account-card {
-    border-radius: 12px;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 1rem;
+    border: 2px solid #e2e8f0;
+    background: #ffffff;
+    cursor: pointer !important;
+    user-select: none;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
 }
 
-    .account-card.active-account {
-        border: 2px solid #0d6efd !important;
-        background-color: #f8faff;
+    .account-card:hover {
+        transform: translateY(-3px);
+        border-color: #cbd5e1;
+        box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.05) !important;
     }
 
-.account-card-badge {
-    border-left: 4px solid #0d6efd;
+    .account-card:active {
+        transform: translateY(-1px) scale(0.99);
+    }
+
+    .account-card.active-account {
+        border-color: #2563eb !important;
+        background-color: #f8fafc;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12) !important;
+    }
+
+.selection-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.35em 0.8em;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+    .selection-badge.selected {
+        background-color: #2563eb;
+        color: #ffffff;
+    }
+
+    .selection-badge.unselected {
+        background-color: #ffffff;
+        color: #2563eb;
+        border: 1.5px solid #2563eb;
+    }
+
+/* Table & Panel Adjustments */
+.dashboard-panel {
+    border-radius: 1rem;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    background: #ffffff;
+}
+
+.account-active-badge {
+    border-left: 4px solid #2563eb;
+    border-radius: 0.75rem;
+    background: #f8fafc;
+}
+
+.btn-quick-action {
+    border-radius: 0.65rem;
+    padding: 0.7rem 1rem;
+    font-weight: 600;
+    transition: all 0.15s ease-in-out;
+}
+
+    .btn-quick-action:hover {
+        transform: translateY(-1px);
+    }
+
+.extra-small {
+    font-size: 0.75rem;
+}
+
+@keyframes dashboardFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
