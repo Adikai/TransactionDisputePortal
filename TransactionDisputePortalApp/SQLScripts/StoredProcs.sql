@@ -121,9 +121,9 @@ BEGIN
 END
 GO
 --==============================================================================
---Author:  Adhil Sewrathan
---DateCreated: 2026-09-01
---Description:  Updates the status of a given dispute
+--Author:      Adhil Sewrathan
+--DateCreated: 2026-09-10
+--Description: Updates the status of a dispute and atomically adjusts account balances
 --==============================================================================
 CREATE OR ALTER PROCEDURE [dbo].[UpdateDisputeStatus]
     @DisputeID INT,
@@ -132,27 +132,98 @@ CREATE OR ALTER PROCEDURE [dbo].[UpdateDisputeStatus]
     @Notes NVARCHAR(1000) = NULL
 AS
 BEGIN
-        SET NOCOUNT OFF;
+    SET NOCOUNT ON;
 
     BEGIN TRY 
         BEGIN TRANSACTION;
 
         DECLARE @PreviousStatusID INT;
+        DECLARE @DisputedAmount DECIMAL(18, 2);
+        DECLARE @AccountID INT;
+        DECLARE @OldBalance DECIMAL(18, 2);
+        DECLARE @NewBalance DECIMAL(18, 2);
+        DECLARE @ApprovedStatusID INT = 3; 
 
-        SELECT @PreviousStatusID = DisputeStatusID 
-        FROM dbo.Disputes WITH (UPDLOCK, HOLDLOCK)
-        WHERE DisputeID = @DisputeID;
+
+        SELECT 
+            @PreviousStatusID = d.DisputeStatusID,
+            @DisputedAmount = d.DisputedAmount,
+            @AccountID = a.AccountID,
+            @OldBalance = a.Balance
+        FROM dbo.Disputes d WITH (UPDLOCK, HOLDLOCK)
+        INNER JOIN dbo.Transactions t ON d.TransactionID = t.TransactionID
+        INNER JOIN dbo.Accounts a WITH (UPDLOCK, HOLDLOCK) ON t.AccountID = a.AccountID
+        WHERE d.DisputeID = @DisputeID;
+
 
         IF @PreviousStatusID IS NULL
         BEGIN
-            RAISERROR('Dispute not found.', 16, 1);
+            RAISERROR('Dispute record not found.', 16, 1);
         END
 
+
+        IF @PreviousStatusID = @NewStatusID
+        BEGIN
+            COMMIT TRANSACTION;
+            RETURN;
+        END
+
+        IF @PreviousStatusID <> @ApprovedStatusID AND @NewStatusID = @ApprovedStatusID
+        BEGIN
+            SET @NewBalance = @OldBalance + @DisputedAmount;
+
+            UPDATE dbo.Accounts
+            SET Balance = @NewBalance
+            WHERE AccountID = @AccountID;
+
+            INSERT INTO dbo.AccountBalanceAuditLogs (
+                AccountID,
+                PreviousBalance,
+                NewBalance,
+                Reason,
+                Timestamp
+            )
+            VALUES (
+                @AccountID,
+                @OldBalance,
+                @NewBalance,
+                CONCAT('Dispute #', @DisputeID, ' Approved - Credit Adjustment'),
+                SYSDATETIMEOFFSET()
+            );
+        END
+
+
+        IF @PreviousStatusID = @ApprovedStatusID AND @NewStatusID <> @ApprovedStatusID
+        BEGIN
+            SET @NewBalance = @OldBalance - @DisputedAmount;
+
+            UPDATE dbo.Accounts
+            SET Balance = @NewBalance
+            WHERE AccountID = @AccountID;
+
+            INSERT INTO dbo.AccountBalanceAuditLogs (
+                AccountID,
+                PreviousBalance,
+                NewBalance,
+                Reason,
+                Timestamp
+            )
+            VALUES (
+                @AccountID,
+                @OldBalance,
+                @NewBalance,
+                CONCAT('Dispute #', @DisputeID, ' Reverted from Approved - Debit Adjustment'),
+                SYSDATETIMEOFFSET()
+            );
+        END
+
+        -- Update Dispute Record
         UPDATE dbo.Disputes
         SET DisputeStatusID = @NewStatusID,
             UpdatedAt = SYSDATETIMEOFFSET()
         WHERE DisputeID = @DisputeID;
 
+        DECLARE @RowsUpdated INT = @@ROWCOUNT;
 
         INSERT INTO dbo.DisputeAuditLogs (
             DisputeID,
@@ -172,6 +243,9 @@ BEGIN
         );
 
         COMMIT TRANSACTION;
+
+        SELECT @RowsUpdated;
+        
     END TRY 
     BEGIN CATCH
         IF @@TRANCOUNT > 0

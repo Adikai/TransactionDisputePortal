@@ -46,7 +46,7 @@ public class TransactionRepository : ITransactionRepository
             commandType: CommandType.StoredProcedure
         );
 
-        return rowsAffected > 0;
+        return rowsAffected != 0;
     }
 
     public async Task<int> CreateDispute(CreateDisputeRequestDTO request)

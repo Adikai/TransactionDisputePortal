@@ -17,15 +17,21 @@ namespace TransactionDisputePortal.Client
 
         public async Task SetTokenAsync(string token, int UserID, string customerName, string role)
         {
-            await _jsRuntime.InvokeVoidAsync("localStorage.setItem", TokenKey, token);
-            await _jsRuntime.InvokeVoidAsync("localStorage.setItem", UserIDKey, UserID.ToString());
-            await _jsRuntime.InvokeVoidAsync("localStorage.setItem", CustomerNameKey, customerName);
-            await _jsRuntime.InvokeVoidAsync("localStorage.setItem", UserRoleKey, role);
+            await _jsRuntime.InvokeVoidAsync("sessionStorage.setItem", TokenKey, token);
+            await _jsRuntime.InvokeVoidAsync("sessionStorage.setItem", UserIDKey, UserID.ToString());
+            await _jsRuntime.InvokeVoidAsync("sessionStorage.setItem", CustomerNameKey, customerName);
+            await _jsRuntime.InvokeVoidAsync("sessionStorage.setItem", UserRoleKey, role);
+        }
+
+        public async Task<bool> IsAuthenticatedAsync()
+        {
+            var token = await GetTokenAsync();
+            return !string.IsNullOrWhiteSpace(token);
         }
 
         public async Task<string?> GetUserRoleAsync()
         {
-            return await _jsRuntime.InvokeAsync<string?>("localStorage.getItem", UserRoleKey);
+            return await _jsRuntime.InvokeAsync<string?>("sessionStorage.getItem", UserRoleKey);
         }
 
         public async Task<bool> IsStaffAsync()
@@ -35,32 +41,31 @@ namespace TransactionDisputePortal.Client
             if (string.IsNullOrWhiteSpace(role))
                 return false;
 
-            // Treat any non-Customer role (Admin, DisputeAnalyst, Staff) as staff
             return !role.Equals("Customer", StringComparison.OrdinalIgnoreCase);
         }
 
         public async Task RemoveTokenAsync()
         {
-            await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", TokenKey);
-            await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", UserIDKey);
-            await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", CustomerNameKey);
-            await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", UserRoleKey);
+            await _jsRuntime.InvokeVoidAsync("sessionStorage.removeItem", TokenKey);
+            await _jsRuntime.InvokeVoidAsync("sessionStorage.removeItem", UserIDKey);
+            await _jsRuntime.InvokeVoidAsync("sessionStorage.removeItem", CustomerNameKey);
+            await _jsRuntime.InvokeVoidAsync("sessionStorage.removeItem", UserRoleKey);
         }
 
         public async Task<string?> GetTokenAsync()
         {
-            return await _jsRuntime.InvokeAsync<string?>("localStorage.getItem", TokenKey);
+            return await _jsRuntime.InvokeAsync<string?>("sessionStorage.getItem", TokenKey);
         }
 
         public async Task<int?> GetUserIDAsync()
         {
-            var idStr = await _jsRuntime.InvokeAsync<string?>("localStorage.getItem", UserIDKey);
+            var idStr = await _jsRuntime.InvokeAsync<string?>("sessionStorage.getItem", UserIDKey);
             return int.TryParse(idStr, out var id) ? id : null;
         }
 
         public async Task<string?> GetCustomerNameAsync()
         {
-            return await _jsRuntime.InvokeAsync<string?>("localStorage.getItem", CustomerNameKey);
+            return await _jsRuntime.InvokeAsync<string?>("sessionStorage.getItem", CustomerNameKey);
         }
     }
 }

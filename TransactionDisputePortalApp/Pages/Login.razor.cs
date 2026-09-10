@@ -1,4 +1,3 @@
-
 using System.Net.Http.Json;
 using TransactionDisputePortal.Shared.Models.DTO;
 
@@ -6,7 +5,6 @@ namespace TransactionDisputePortal.Client.Pages
 {
     public partial class Login
     {
-        //I'm pre-populating this to make it easier for demonstation purposes.
         private LoginRequestDto loginModel = new LoginRequestDto
         {
             Email = "john.doe@example.com",
@@ -15,6 +13,28 @@ namespace TransactionDisputePortal.Client.Pages
 
         private bool isLoading;
         private string? errorMessage;
+
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (firstRender)
+            {
+
+                var isAuthenticated = await AuthService.IsAuthenticatedAsync();
+                if (isAuthenticated)
+                {
+                    var isStaff = await AuthService.IsStaffAsync();
+                    if (isStaff)
+                    {
+                        Navigation.NavigateTo("/admin/disputes", replace: true);
+                    }
+                    else
+                    {
+                        Navigation.NavigateTo("/", replace: true);
+                    }
+                }
+
+            }
+        }
 
         private async Task HandleLogin()
         {
@@ -33,7 +53,8 @@ namespace TransactionDisputePortal.Client.Pages
                     {
                         await AuthService.RemoveTokenAsync();
                         await AuthService.SetTokenAsync(result.Token, result.UserID, result.DisplayName, result.UserRole);
-                     if( result.UserRole.Equals("Customer", StringComparison.OrdinalIgnoreCase))
+
+                        if (result.UserRole.Equals("Customer", StringComparison.OrdinalIgnoreCase))
                         {
                             Navigation.NavigateTo("/", replace: true);
                         }
