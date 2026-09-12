@@ -693,3 +693,173 @@ BEGIN
     END CATCH
 END;
 GO
+
+--==============================================================================
+--Author:  Adhil Sewrathan
+--DateCreated: 2026-09-12
+--Description:  Gets all Customers
+--==============================================================================
+CREATE OR ALTER PROCEDURE dbo.GetCustomers
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+SELECT [CustomerID]
+      ,[FirstName]
+      ,[LastName]
+      ,[Email]
+      ,[PhoneNumber]
+      ,[PasswordHash]
+      ,[CreatedAt]
+  FROM [TransactionDispute].[dbo].[Customers] WITH(NOLOCK)
+END;
+GO
+USE TransactionDispute;
+GO
+
+--==============================================================================
+--Author:  Adhil Sewrathan
+--DateCreated: 2026-09-12
+--Description:  Creates an Account for a given CustomerID and returns the new AccountID
+--==============================================================================
+CREATE OR ALTER PROCEDURE dbo.CreateAccount
+    @CustomerID INT,
+    @AccountNumber VARCHAR(20),
+    @AccountType NVARCHAR(50),
+    @InitialBalance DECIMAL(18, 2) = 0.00,
+    @NewAccountID INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+
+        IF NOT EXISTS (SELECT 1 FROM dbo.Customers WHERE CustomerID = @CustomerID)
+        BEGIN
+            ;THROW 50001, 'Invalid CustomerID. Customer does not exist.', 1;
+        END
+
+
+        IF EXISTS (SELECT 1 FROM dbo.Accounts WHERE AccountNumber = @AccountNumber)
+        BEGIN
+            ;THROW 50002, 'An account with this Account Number already exists.', 1;
+        END
+
+        BEGIN TRANSACTION;
+
+        INSERT INTO dbo.Accounts (AccountNumber, CustomerID, AccountType, Balance)
+        VALUES (@AccountNumber, @CustomerID, @AccountType, @InitialBalance);
+
+        SET @NewAccountID = SCOPE_IDENTITY();
+
+        IF @InitialBalance <> 0.00
+        BEGIN
+            INSERT INTO dbo.AccountBalanceAuditLogs (AccountID, PreviousBalance, NewBalance, Reason)
+            VALUES (@NewAccountID, 0.00, @InitialBalance, 'Initial deposit on account creation');
+        END
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH
+END;
+GO
+
+--==============================================================================
+--Author:  Adhil Sewrathan
+--DateCreated: 2026-09-12
+--Description:  Updates an Account's details, including AccountType and Balance, with automatic audit logging for balance changes
+--==============================================================================
+CREATE OR ALTER PROCEDURE dbo.UpdateAccount
+    @AccountID INT,
+    @AccountType NVARCHAR(50),
+    @NewBalance DECIMAL(18, 2),
+    @Reason NVARCHAR(250) = 'Admin details update'
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        DECLARE @CurrentBalance DECIMAL(18, 2);
+
+        SELECT @CurrentBalance = Balance
+        FROM dbo.Accounts
+        WHERE AccountID = @AccountID;
+
+        IF @CurrentBalance IS NULL
+        BEGIN
+            ;THROW 50003, 'Account not found.', 1;
+        END
+
+        BEGIN TRANSACTION;
+
+        IF @CurrentBalance <> @NewBalance
+        BEGIN
+            INSERT INTO dbo.AccountBalanceAuditLogs (AccountID, PreviousBalance, NewBalance, Reason)
+            VALUES (@AccountID, @CurrentBalance, @NewBalance, @Reason);
+        END
+
+        UPDATE dbo.Accounts
+        SET AccountType = @AccountType,
+            Balance = @NewBalance
+        WHERE AccountID = @AccountID;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH
+END;
+GO
+
+--==============================================================================
+--Author:  Adhil Sewrathan
+--DateCreated: 2026-09-12
+--Description:  Deletes an Account and all associated data (transactions, disputes, and audit logs) with proper checks to prevent deletion if linked financial transactions exist
+--==============================================================================
+CREATE OR ALTER PROCEDURE dbo.DeleteAccount
+    @AccountID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM dbo.Accounts WHERE AccountID = @AccountID)
+        BEGIN
+            ;THROW 50004, 'Account not found.', 1;
+        END
+
+
+        IF EXISTS (SELECT 1 FROM dbo.Transactions WHERE AccountID = @AccountID)
+        BEGIN
+            ;THROW 50005, 'Cannot delete account because active transaction records are linked to it.', 1;
+        END
+
+        BEGIN TRANSACTION;
+
+        DELETE FROM dbo.AccountBalanceAuditLogs
+        WHERE AccountID = @AccountID;
+
+        DELETE FROM dbo.Accounts
+        WHERE AccountID = @AccountID;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH
+END;
+GO

@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\TransactionDisputePortal.Core\TransactionDisputePortal.Core.csproj" />
     <ProjectReference Include="..\TransactionDisputePortal.Shared\TransactionDisputePortal.Shared.csproj" />
   </ItemGroup>
 

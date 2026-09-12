@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
+using TransactionDisputePortal.Core.Helpers;
 using TransactionDisputePortal.Shared.Models.DTO;
 
 namespace TransactionDisputePortal.Client.Pages
@@ -22,6 +23,10 @@ namespace TransactionDisputePortal.Client.Pages
         private bool isEditMode = false;
         private string plainPassword = string.Empty;
         private string? errorMessage;
+        private bool showAccountsModal = false;
+        private CustomerViewModel? selectedCustomerForAccounts;
+        private List<AccountDTOResponse> customerAccounts = new();
+        private CreateAccountDto? newAccountModel;
 
         private CustomerViewModel currentModel = new();
         private CustomerViewModel? customerToDelete;
@@ -52,7 +57,8 @@ namespace TransactionDisputePortal.Client.Pages
 
         private IEnumerable<CustomerViewModel> FilteredCustomers => customers
             .Where(c => string.IsNullOrWhiteSpace(searchTerm) ||
-                        c.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                        c.FirstName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                        c.LastName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
                         c.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
                         c.AccountNumber.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
 
@@ -69,8 +75,9 @@ namespace TransactionDisputePortal.Client.Pages
             isEditMode = true;
             currentModel = new CustomerViewModel
             {
-                CustomerId = customer.CustomerId,
-                FullName = customer.FullName,
+                CustomerID = customer.CustomerID,
+                FirstName = customer.FirstName,
+                LastName = customer.LastName,
                 Email = customer.Email,
                 PhoneNumber = customer.PhoneNumber,
                 AccountNumber = customer.AccountNumber,
@@ -88,18 +95,19 @@ namespace TransactionDisputePortal.Client.Pages
 
         private async Task SaveCustomerAsync()
         {
-            var (firstName, lastName) = SplitFullName(currentModel.FullName);
+            var firstName = currentModel.FirstName;
+            var lastName = currentModel.LastName;
 
             if (isEditMode)
             {
                 var updateDto = new UpdateCustomerDto
                 {
-                    CustomerID = currentModel.CustomerId,
+                    CustomerID = currentModel.CustomerID,
                     FirstName = firstName,
                     LastName = lastName,
                     Email = currentModel.Email,
                     PhoneNumber = currentModel.PhoneNumber,
-                    PasswordHash = string.IsNullOrWhiteSpace(plainPassword) ? null : HashPassword(plainPassword)
+                    PasswordHash = string.IsNullOrWhiteSpace(plainPassword) ? null : PasswordHelper.HashPassword(plainPassword)
                 };
 
                 var response = await Http.PutAsJsonAsync("api/Admin/UpdateCustomer", updateDto);
@@ -116,8 +124,8 @@ namespace TransactionDisputePortal.Client.Pages
             else
             {
                 string hashedPassword = string.IsNullOrWhiteSpace(plainPassword)
-                    ? HashPassword("DefaultPassword123!")
-                    : HashPassword(plainPassword);
+                    ? PasswordHelper.HashPassword("DefaultPassword123!")
+                    : PasswordHelper.HashPassword(plainPassword);
 
                 var createDto = new CreateCustomerDto
                 {
@@ -151,7 +159,7 @@ namespace TransactionDisputePortal.Client.Pages
         {
             if (customerToDelete != null)
             {
-                var response = await Http.DeleteAsync($"api/Admin/DeleteCustomer/{customerToDelete.CustomerId}");
+                var response = await Http.DeleteAsync($"api/Admin/DeleteCustomer/{customerToDelete.CustomerID}");
                 if (response.IsSuccessStatusCode)
                 {
                     await LoadCustomersAsync();
@@ -179,11 +187,63 @@ namespace TransactionDisputePortal.Client.Pages
             };
         }
 
-        private static string HashPassword(string password)
+        private async Task OpenAccountsModal(CustomerViewModel customer)
         {
-            using var sha256 = SHA256.Create();
-            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return Convert.ToHexString(bytes).ToLowerInvariant();
+            selectedCustomerForAccounts = customer;
+            newAccountModel = new CreateAccountDto { CustomerID = customer.CustomerID };
+            await FetchCustomerAccountsAsync(customer.CustomerID);
+            showAccountsModal = true;
+        }
+
+        private void CloseAccountsModal()
+        {
+            showAccountsModal = false;
+            selectedCustomerForAccounts = null;
+            customerAccounts.Clear();
+        }
+
+        private async Task FetchCustomerAccountsAsync(int customerId)
+        {
+            try
+            {
+                var response = await Http.GetFromJsonAsync<List<AccountDTOResponse>>($"api/Admin/GetAccountsByCustomer/{customerId}");
+                customerAccounts = response ?? new List<AccountDTOResponse>();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error loading customer accounts: {ex.Message}";
+            }
+        }
+
+        private async Task CreateAccountAsync()
+        {
+            if (selectedCustomerForAccounts == null) return;
+
+            var response = await Http.PostAsJsonAsync("api/Admin/CreateAccount", newAccountModel);
+            if (response.IsSuccessStatusCode)
+            {
+                await FetchCustomerAccountsAsync(selectedCustomerForAccounts.CustomerID);
+                newAccountModel = new CreateAccountDto { CustomerID = selectedCustomerForAccounts.CustomerID };
+            }
+            else
+            {
+                errorMessage = "Failed to create account.";
+            }
+        }
+
+        private async Task DeleteAccountAsync(int accountId)
+        {
+            if (selectedCustomerForAccounts == null) return;
+
+            var response = await Http.DeleteAsync($"api/Admin/DeleteAccount/{accountId}");
+            if (response.IsSuccessStatusCode)
+            {
+                await FetchCustomerAccountsAsync(selectedCustomerForAccounts.CustomerID);
+            }
+            else
+            {
+                errorMessage = "Failed to delete account.";
+            }
         }
     }
 }

@@ -172,11 +172,11 @@ IF NOT EXISTS (SELECT 1 FROM DisputeStatuses WHERE DisputeStatusID = 1)
 -- 4.2. Sample Customers & Staff
 IF NOT EXISTS (SELECT 1 FROM Customers WHERE Email = 'john.doe@example.com')
     INSERT INTO Customers (FirstName, LastName, Email, PhoneNumber, PasswordHash) 
-    VALUES ('John', 'Doe', 'john.doe@example.com', '+27821234567', 'AQAAAAIAAYagAAAAE...'); 
+    VALUES ('John', 'Doe', 'john.doe@example.com', '+27821234567', 'b846a003c750ec984aeaec80fa653af2e139d7744487b47774b9b8f0a4a081ff'); 
 
 IF NOT EXISTS (SELECT 1 FROM Customers WHERE Email = 'jane.smith@example.com')
     INSERT INTO Customers (FirstName, LastName, Email, PhoneNumber, PasswordHash) 
-    VALUES ('Jane', 'Smith', 'jane.smith@example.com', '+27839876543', 'AQAAAAIAAYagAAAAE...');
+    VALUES ('Jane', 'Smith', 'jane.smith@example.com', '+27839876543', 'b846a003c750ec984aeaec80fa653af2e139d7744487b47774b9b8f0a4a081ff');
 
 IF NOT EXISTS (SELECT 1 FROM StaffUsers WHERE Email = 'analyst@bank.com')
     INSERT INTO StaffUsers (Username, FullName, Email, RoleID, PasswordHash)

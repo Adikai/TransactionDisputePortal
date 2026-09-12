@@ -15,5 +15,9 @@ namespace TransactionDisputePortal.Core.Interfaces
         Task<int> CreateCustomerAsync(CreateCustomerDto request);
         Task UpdateCustomerAsync(UpdateCustomerDto request);
         Task DeleteCustomerAsync(int customerId);
+        Task<IEnumerable<CustomerViewModel>> GetCustomersAsync();
+        Task<int> CreateAccountAsync(CreateAccountDto request);
+        Task UpdateAccountAsync(UpdateAccountDto request);
+        Task DeleteAccountAsync(int accountId);
     }
 }

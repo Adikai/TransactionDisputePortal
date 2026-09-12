@@ -53,7 +53,6 @@
                         <th>Customer ID</th>
                         <th>Full Name</th>
                         <th>Email / Contact</th>
-                        <th>Password Hash</th>
                         <th>Created Date</th>
                         <th class="text-end">Actions</th>
                     </tr>
@@ -62,7 +61,7 @@
                     @if (!FilteredCustomers.Any())
                     {
                         <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">
+                            <td colspan="5" class="text-center py-5 text-muted">
                                 <i class="bi bi-people fs-2 d-block mb-2 text-secondary"></i>
                                 No customers found matching your criteria.
                             </td>
@@ -73,25 +72,20 @@
                         @foreach (var customer in FilteredCustomers)
                         {
                             <tr>
-                                <td class="fw-semibold font-monospace text-primary">#@customer.CustomerId</td>
+                                <td class="fw-semibold font-monospace text-primary">#@customer.CustomerID</td>
                                 <td>
-                                    <div class="fw-bold text-dark">@customer.FullName</div>
-                                    <span class="extra-small text-muted">Acc: @customer.AccountNumber</span>
+                                    <div class="fw-bold text-dark">@customer.FirstName @customer.LastName</div>
                                 </td>
                                 <td>
                                     <div class="small">@customer.Email</div>
                                     <span class="extra-small text-muted">@customer.PhoneNumber</span>
                                 </td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-1">
-                                        <code class="bg-light text-danger px-2 py-1 rounded small text-break font-monospace" style="max-width: 260px; font-size: 0.75rem;">
-                                            @customer.PasswordHash
-                                        </code>
-                                    </div>
-                                </td>
                                 <td class="text-muted small">@customer.CreatedAt.ToString("yyyy-MM-dd")</td>
                                 <td class="text-end">
                                     <div class="btn-group">
+                                        <button class="btn btn-outline-primary btn-sm" title="Manage Accounts" @onclick="() => OpenAccountsModal(customer)">
+                                            <i class="bi bi-wallet2"></i>
+                                        </button>
                                         <button class="btn btn-outline-secondary btn-sm" title="Edit Customer" @onclick="() => OpenEditModal(customer)">
                                             <i class="bi bi-pencil"></i>
                                         </button>
@@ -125,9 +119,15 @@
                     <DataAnnotationsValidator />
                     <div class="modal-body py-3">
                         <div class="mb-3">
-                            <label class="form-label fw-semibold small">Full Name</label>
-                            <InputText class="form-control" @bind-Value="currentModel.FullName" placeholder="e.g. John Doe" />
-                            <ValidationMessage For="@(() => currentModel.FullName)" class="text-danger extra-small" />
+                            <label class="form-label fw-semibold small">First Name</label>
+                            <InputText class="form-control" @bind-Value="currentModel.FirstName" placeholder="e.g. John" />
+                            <ValidationMessage For="@(() => currentModel.FirstName)" class="text-danger extra-small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Last Name</label>
+                            <InputText class="form-control" @bind-Value="currentModel.LastName" placeholder="e.g. Doe" />
+                            <ValidationMessage For="@(() => currentModel.LastName)" class="text-danger extra-small" />
                         </div>
 
                         <div class="mb-3">
@@ -178,12 +178,106 @@
                     <i class="bi bi-exclamation-circle text-danger fs-1 mb-2 d-block"></i>
                     <h5 class="fw-bold text-dark">Delete Customer?</h5>
                     <p class="text-muted small mb-3">
-                        Are you sure you want to delete <strong>@customerToDelete.FullName</strong>? This action cannot be undone.
+                        Are you sure you want to delete <strong>@customerToDelete.FirstName @customerToDelete.LastName</strong>? This action cannot be undone.
                     </p>
                     <div class="d-flex gap-2 justify-content-center">
                         <button class="btn btn-light px-3 fw-semibold" @onclick="() => showDeleteModal = false">Cancel</button>
                         <button class="btn btn-danger px-3 fw-semibold" @onclick="DeleteCustomerAsync">Delete</button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Bank Accounts Sub-Management Modal -->
+@if (showAccountsModal && selectedCustomerForAccounts != null)
+{
+    <div class="modal fade show d-block tab-modal-backdrop" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg rounded-3">
+                <div class="modal-header border-bottom bg-light">
+                    <div>
+                        <h5 class="modal-title fw-bold">Manage Bank Accounts</h5>
+                        <span class="text-muted small">Customer: <strong>@selectedCustomerForAccounts.FirstName @selectedCustomerForAccounts.LastName</strong> (#@selectedCustomerForAccounts.CustomerID)</span>
+                    </div>
+                    <button type="button" class="btn-close" @onclick="CloseAccountsModal"></button>
+                </div>
+                <div class="modal-body py-3">
+
+                    <!-- Create New Account Bar -->
+                    <div class="card border p-3 mb-3 bg-light rounded-3">
+                        <h6 class="fw-bold mb-2 text-dark small">Add New Bank Account</h6>
+                        <EditForm Model="newAccountModel" OnValidSubmit="CreateAccountAsync">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-md-4">
+                                    <InputText class="form-control form-control-sm" placeholder="Account Number (e.g. ACC-12345)" @bind-Value="newAccountModel.AccountNumber" />
+                                </div>
+                                <div class="col-md-3">
+                                    <InputSelect class="form-select form-select-sm" @bind-Value="newAccountModel.AccountType">
+                                        <option value="Checking">Checking</option>
+                                        <option value="Savings">Savings</option>
+                                        <option value="Credit Card">Credit Card</option>
+                                    </InputSelect>
+                                </div>
+                                <div class="col-md-3">
+                                    <InputNumber class="form-control form-control-sm" placeholder="Initial Balance" @bind-Value="newAccountModel.InitialBalance" />
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="submit" class="btn btn-success btn-sm w-100 fw-semibold">
+                                        <i class="bi bi-plus-circle me-1"></i> Add
+                                    </button>
+                                </div>
+                            </div>
+                        </EditForm>
+                    </div>
+
+                    <!-- Customer Accounts List -->
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0 border">
+                            <thead class="table-light">
+                                <tr class="extra-small text-muted text-uppercase fw-bold">
+                                    <th>Account Number</th>
+                                    <th>Type</th>
+                                    <th>Balance</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!customerAccounts.Any())
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-center py-4 text-muted small">
+                                            No bank accounts linked to this customer yet.
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var acc in customerAccounts)
+                                    {
+                                        <tr>
+                                            <td class="font-monospace fw-bold text-dark">@acc.AccountNumber</td>
+                                            <td>
+                                                <span class="badge bg-secondary opacity-75">@acc.AccountType</span>
+                                            </td>
+                                            <td class="fw-semibold text-success">
+                                                R @acc.Balance.ToString("N2")
+                                            </td>
+                                            <td class="text-end">
+                                                <button class="btn btn-outline-danger btn-sm py-0 px-2" @onclick="() => DeleteAccountAsync(acc.AccountID)">
+                                                    <i class="bi bi-trash extra-small"></i> Delete
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top py-2">
+                    <button type="button" class="btn btn-secondary btn-sm px-3" @onclick="CloseAccountsModal">Close</button>
                 </div>
             </div>
         </div>

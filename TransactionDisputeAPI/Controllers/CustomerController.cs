@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using TransactionDisputePortal.Core.Helpers;
 using TransactionDisputePortal.Core.Interfaces;
 using TransactionDisputePortal.Shared.Models.DTO;
 
@@ -26,7 +27,30 @@ namespace TransactionDisputePortal.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto loginRequest)
         {
-            var customer = await _accountRepository.loginCustomer(loginRequest);
+            if (loginRequest == null || string.IsNullOrWhiteSpace(loginRequest.Email) || string.IsNullOrWhiteSpace(loginRequest.PasswordHash))
+            {
+                return BadRequest("Email and Password are required.");
+            }
+            string computedHash;
+
+            //This is done for demo purposes.
+            // Admin passwords should also be hashed and stored in the DB.
+            if (!loginRequest.Email.Equals("admin"))
+            {
+                computedHash = PasswordHelper.HashPassword(loginRequest.PasswordHash);
+            }
+            else
+            {
+                computedHash = loginRequest.PasswordHash;
+            }
+
+            var requestWithHash = new LoginRequestDto
+            {
+                Email = loginRequest.Email,
+                PasswordHash = computedHash
+            };
+
+            var customer = await _accountRepository.loginCustomer(requestWithHash);
 
             if (customer == null)
             {

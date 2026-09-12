@@ -116,7 +116,7 @@ namespace TransactionDisputePortal.Infrastructure.Repositories
             parameters.Add("NewCustomerID", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await _sqlExecuter.ExecuteAsync(
-                "[dbo].[sp_CreateCustomer]",
+                "[dbo].[CreateCustomer]",
                 parameters,
                 commandType: CommandType.StoredProcedure
             );
@@ -137,7 +137,7 @@ namespace TransactionDisputePortal.Infrastructure.Repositories
             };
 
             await _sqlExecuter.ExecuteAsync(
-                "[dbo].[sp_UpdateCustomer]",
+                "[dbo].[UpdateCustomer]",
                 param,
                 commandType: CommandType.StoredProcedure
             );
@@ -148,7 +148,57 @@ namespace TransactionDisputePortal.Infrastructure.Repositories
             var param = new { CustomerID = customerId };
 
             await _sqlExecuter.ExecuteAsync(
-                "[dbo].[sp_DeleteCustomer]",
+                "[dbo].[DeleteCustomer]",
+                param,
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+        public async Task<IEnumerable<CustomerViewModel>> GetCustomersAsync()
+        {
+            var customers = await _sqlExecuter.QueryAsync<CustomerViewModel>("[dbo].[GetCustomers]");
+
+            return customers;
+        }
+
+        public async Task<int> CreateAccountAsync(CreateAccountDto request)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("CustomerID", request.CustomerID);
+            parameters.Add("AccountNumber", request.AccountNumber);
+            parameters.Add("AccountType", request.AccountType);
+            parameters.Add("InitialBalance", request.InitialBalance);
+            parameters.Add("NewAccountID", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+            await _sqlExecuter.ExecuteAsync(
+                "[dbo].[CreateAccount]",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+            return parameters.Get<int>("NewAccountID");
+        }
+
+        public async Task UpdateAccountAsync(UpdateAccountDto request)
+        {
+            var param = new
+            {
+                AccountID = request.AccountID,
+                AccountType = request.AccountType,
+                NewBalance = request.Balance,
+                Reason = request.Note
+            };
+            await _sqlExecuter.ExecuteAsync(
+                "[dbo].[UpdateAccount]",
+                param,
+                commandType: CommandType.StoredProcedure
+            );
+        }
+
+        public async Task DeleteAccountAsync(int accountId)
+        {
+            var param = new { AccountID = accountId };
+            await _sqlExecuter.ExecuteAsync(
+                "[dbo].[DeleteAccount]",
                 param,
                 commandType: CommandType.StoredProcedure
             );
