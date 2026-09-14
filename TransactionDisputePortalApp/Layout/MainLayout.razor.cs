@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Components.Routing;
 
 namespace TransactionDisputePortal.Client.Layout
 {
-    public partial class MainLayout
+    public partial class MainLayout : IDisposable
     {
         private bool isCheckingAuth = true;
         private bool isLoginPage = false;
@@ -20,10 +20,11 @@ namespace TransactionDisputePortal.Client.Layout
             isLoginPage = relativeUri.Equals("login", StringComparison.OrdinalIgnoreCase);
         }
 
-        private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+        private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
         {
             EvaluateRoute();
-            StateHasChanged();
+            await ValidateAuthenticationAsync();
+            await InvokeAsync(StateHasChanged);
         }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -51,7 +52,11 @@ namespace TransactionDisputePortal.Client.Layout
                 }
 
                 var name = await Auth.GetCustomerNameAsync();
-                customerName = name;
+
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    customerName = name;
+                }
             }
 
             isCheckingAuth = false;
@@ -61,6 +66,7 @@ namespace TransactionDisputePortal.Client.Layout
         private async Task HandleLogout()
         {
             await Auth.RemoveTokenAsync();
+            customerName = "Portal User";
             Navigation.NavigateTo("login");
         }
 
