@@ -11,8 +11,6 @@ Log.Logger = new LoggerConfiguration()
 try
 {
     var builder = WebApplication.CreateBuilder(args);
-    builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: false);
-    builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
 
     builder.Services.AddSerilog((services, loggerConfig) => loggerConfig
     .ReadFrom.Configuration(builder.Configuration)
@@ -38,15 +36,15 @@ try
 
     var app = builder.Build();
 
-    if (app.Environment.IsDevelopment())
-    {
-        app.MapOpenApi();
-        //I prefer ScalarApiReference over SwaggerUI, just looks better :D
-        app.MapScalarApiReference();
-    }
+    app.MapOpenApi();
+    //I prefer ScalarApiReference over SwaggerUI, just looks better :D
+    app.MapScalarApiReference();
     app.UseRouting();
     app.UseCors("AllowBlazorClient");
-    app.UseHttpsRedirection();
+    if (!app.Environment.IsProduction())
+    {
+        app.UseHttpsRedirection();
+    }
 
     app.UseAuthorization();
 
